@@ -160,3 +160,4 @@ gunicorn school_platform.wsgi:application
 ---
 
 *EduPlatform — Conçu pour les établissements scolaires francophones d'Afrique et d'Europe.*
+# school_platform2
