@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% block title %}Assurances — {{ target_user.get_full_name }}{% endblock %}
+{% block page_title %}Assurances{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Assurances de {{ target_user.get_full_name }}</h1>
+    <p class="page-breadcrumb">{{ insurances|length }} contrat(s)</p>
+  </div>
+  <div style="display:flex;gap:8px;">
+    {% if user.role == 'admin' %}
+    <a href="{% url 'insurance_create' %}?user={{ target_user.pk }}" class="btn btn-primary">+ Ajouter</a>
+    {% endif %}
+    <a href="{% url 'insurance_list' %}" class="btn btn-secondary">← Retour</a>
+  </div>
+</div>
+
+<!-- Carte identité -->
+<div class="card" style="margin-bottom:16px;display:flex;align-items:center;gap:16px;">
+  <div class="avatar" style="width:56px;height:56px;font-size:20px;">
+    {% if target_user.avatar %}<img src="{{ target_user.avatar.url }}" alt="">
+    {% else %}{{ target_user.first_name|first|upper }}{{ target_user.last_name|first|upper }}{% endif %}
+  </div>
+  <div>
+    <div style="font-size:18px;font-weight:700;">{{ target_user.get_full_name }}</div>
+    <div style="display:flex;gap:8px;margin-top:4px;">
+      <span class="badge {% if target_user.role == 'student' %}badge-blue{% elif target_user.role == 'teacher' %}badge-green{% else %}badge-purple{% endif %}">{{ target_user.get_role_display }}</span>
+      <span style="font-size:12px;color:var(--text3);">{{ target_user.email }}</span>
+    </div>
+  </div>
+  <div style="margin-left:auto;display:flex;gap:8px;">
+    <a href="{% url 'medical_edit_for' target_user.pk %}" class="btn btn-secondary btn-sm">🏥 Fiche médicale</a>
+  </div>
+</div>
+
+{% if insurances %}
+<div style="display:flex;flex-direction:column;gap:12px;">
+  {% for ins in insurances %}
+  <div class="card" style="border-left:4px solid {% if ins.status == 'active' %}var(--success){% elif ins.status == 'expired' %}var(--danger){% elif ins.status == 'pending' %}var(--warning){% else %}var(--border){% endif %};">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+      <div>
+        <div style="font-size:16px;font-weight:700;margin-bottom:4px;">{{ ins.get_insurance_type_display }}</div>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:8px;">{{ ins.company }} · <span style="font-family:monospace;">{{ ins.policy_number }}</span></div>
+        <div style="display:flex;gap:16px;font-size:12px;color:var(--text3);">
+          <span>📅 {{ ins.start_date|date:"d/m/Y" }} → {{ ins.end_date|date:"d/m/Y" }}</span>
+          {% if ins.premium_amount %}<span>💳 {{ ins.premium_amount|floatformat:0 }} FCFA/an</span>{% endif %}
+          {% if ins.coverage_amount %}<span>🛡️ Couverture : {{ ins.coverage_amount|floatformat:0 }} FCFA</span>{% endif %}
+        </div>
+        {% if ins.beneficiary %}<div style="font-size:12px;color:var(--text3);margin-top:4px;">Bénéficiaire(s) : {{ ins.beneficiary }}</div>{% endif %}
+        {% if ins.notes %}<div style="font-size:12px;color:var(--text3);margin-top:4px;font-style:italic;">{{ ins.notes }}</div>{% endif %}
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+        {% if ins.status == 'active' %}<span class="badge badge-green">✅ Active</span>
+        {% elif ins.status == 'expired' %}<span class="badge badge-red">Expirée</span>
+        {% elif ins.status == 'pending' %}<span class="badge badge-yellow">En attente</span>
+        {% else %}<span class="badge" style="background:var(--bg3);color:var(--text3);">Résiliée</span>{% endif %}
+        {% with days=ins.days_until_expiry %}
+        {% if days >= 0 and days <= 30 %}<span style="font-size:11px;color:var(--warning);">⚠️ Expire dans {{ days }} jour(s)</span>
+        {% elif days < 0 %}<span style="font-size:11px;color:var(--danger);">Expirée depuis {{ days|slice:"1:" }} jours</span>{% endif %}
+        {% endwith %}
+        {% if user.role == 'admin' %}
+        <div style="display:flex;gap:6px;">
+          <a href="{% url 'insurance_edit' ins.pk %}" class="btn btn-secondary btn-sm">✏️</a>
+          <a href="{% url 'insurance_delete' ins.pk %}" class="btn btn-danger btn-sm">🗑️</a>
+        </div>
+        {% endif %}
+        {% if ins.document %}<a href="{{ ins.document.url }}" class="btn btn-secondary btn-sm" target="_blank">📄 Document</a>{% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card">
+  <div class="empty-state">
+    <div class="icon">🛡️</div>
+    <h3>Aucune assurance pour cette personne</h3>
+    {% if user.role == 'admin' %}
+    <a href="{% url 'insurance_create' %}?user={{ target_user.pk }}" class="btn btn-primary" style="margin-top:16px;">Ajouter une assurance</a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

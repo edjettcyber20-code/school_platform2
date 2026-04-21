@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% block title %}Dossier médical{% endblock %}
+{% block page_title %}Dossier médical{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div style="display:flex;align-items:center;gap:14px;">
+    <a href="{% url 'student_detail' student.pk %}" class="btn-icon">
+      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+    </a>
+    <div>
+      <h1 class="page-title">Dossier médical</h1>
+      <p class="page-breadcrumb">{{ student.get_full_name }}</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" style="max-width:700px;">
+  <form method="post">
+    {% csrf_token %}
+    <div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:10px;padding:14px;margin-bottom:20px;display:flex;gap:10px;align-items:center;">
+      <span style="font-size:20px;">🔒</span>
+      <p style="font-size:13px;color:var(--text2);">Ces informations sont confidentielles et accessibles uniquement au personnel autorisé.</p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div class="form-group">
+        <label class="form-label">Groupe sanguin</label>
+        <select name="blood_type" class="form-select">
+          <option value="">-- Non renseigné --</option>
+          <option value="A+"  {% if medical.blood_type == 'A+'  %}selected{% endif %}>A+</option>
+          <option value="A-"  {% if medical.blood_type == 'A-'  %}selected{% endif %}>A-</option>
+          <option value="B+"  {% if medical.blood_type == 'B+'  %}selected{% endif %}>B+</option>
+          <option value="B-"  {% if medical.blood_type == 'B-'  %}selected{% endif %}>B-</option>
+          <option value="AB+" {% if medical.blood_type == 'AB+' %}selected{% endif %}>AB+</option>
+          <option value="AB-" {% if medical.blood_type == 'AB-' %}selected{% endif %}>AB-</option>
+          <option value="O+"  {% if medical.blood_type == 'O+'  %}selected{% endif %}>O+</option>
+          <option value="O-"  {% if medical.blood_type == 'O-'  %}selected{% endif %}>O-</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">N° assurance maladie</label>
+        <input type="text" name="insurance_number" class="form-input" value="{{ medical.insurance_number }}" placeholder="N° carte / mutuelle">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">⚠️ Allergies connues</label>
+      <textarea name="allergies" class="form-textarea" rows="2" placeholder="Ex : pénicilline, arachides, latex…">{{ medical.allergies }}</textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Conditions médicales / Antécédents</label>
+      <textarea name="medical_conditions" class="form-textarea" rows="2" placeholder="Ex : asthme, diabète, épilepsie…">{{ medical.medical_conditions }}</textarea>
+    </div>
+
+    <div style="background:rgba(249,115,22,0.06);border:1px solid rgba(249,115,22,0.2);border-radius:10px;padding:16px;margin-bottom:16px;">
+      <div style="font-weight:700;font-size:13px;color:var(--accent4);margin-bottom:12px;">🚨 Contact d'urgence</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Nom et prénom</label>
+          <input type="text" name="emergency_contact_name" class="form-input" value="{{ medical.emergency_contact_name }}" placeholder="Nom complet">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Téléphone</label>
+          <input type="text" name="emergency_contact_phone" class="form-input" value="{{ medical.emergency_contact_phone }}" placeholder="+229…">
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div class="form-group">
+        <label class="form-label">Médecin traitant</label>
+        <input type="text" name="doctor_name" class="form-input" value="{{ medical.doctor_name }}" placeholder="Dr. Nom">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Téléphone médecin</label>
+        <input type="text" name="doctor_phone" class="form-input" value="{{ medical.doctor_phone }}" placeholder="+229…">
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;padding-top:16px;border-top:1px solid var(--border);">
+      <button type="submit" class="btn btn-primary">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        Enregistrer
+      </button>
+      <a href="{% url 'student_detail' student.pk %}" class="btn btn-secondary">Annuler</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

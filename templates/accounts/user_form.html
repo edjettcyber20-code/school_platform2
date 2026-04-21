@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ title }}</h1>
+  </div>
+  <a href="{% url 'user_list' %}" class="btn btn-secondary">← Retour</a>
+</div>
+<div class="card" style="max-width:700px;">
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="form-grid">
+      {% for field in form %}
+      <div class="form-group {% if field.field.widget.input_type == 'textarea' %}{% endif %}">
+        <label class="form-label">{{ field.label }}</label>
+        {% if field.field.widget.input_type == 'select' %}
+        <select name="{{ field.html_name }}" class="form-select">
+          {% for val, label in field.field.choices %}
+          <option value="{{ val }}" {% if field.value|stringformat:'s' == val|stringformat:'s' %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        {% elif field.field.widget.input_type == 'checkbox' %}
+        <input type="checkbox" name="{{ field.html_name }}" {% if field.value %}checked{% endif %} style="width:auto;">
+        {% elif field.field.widget.input_type == 'textarea' %}
+        <textarea name="{{ field.html_name }}" class="form-textarea">{{ field.value|default:'' }}</textarea>
+        {% elif field.field.widget.input_type == 'password' %}
+        <input type="password" name="{{ field.html_name }}" class="form-input">
+        {% elif field.field.widget.input_type == 'file' %}
+        <input type="file" name="{{ field.html_name }}" class="form-input">
+        {% else %}
+        <input type="{{ field.field.widget.input_type|default:'text' }}" name="{{ field.html_name }}" value="{{ field.value|default:'' }}" class="form-input">
+        {% endif %}
+        {% if field.errors %}<p class="form-error">{{ field.errors|join:', ' }}</p>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    <div style="display:flex;gap:12px;margin-top:8px;">
+      <button type="submit" class="btn btn-primary">Enregistrer</button>
+      <a href="{% url 'user_list' %}" class="btn btn-secondary">Annuler</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

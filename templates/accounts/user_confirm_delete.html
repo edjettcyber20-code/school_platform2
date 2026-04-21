@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block title %}Supprimer{% endblock %}
+{% block page_title %}Supprimer un utilisateur{% endblock %}
+{% block content %}
+<div class="card" style="max-width:500px;">
+  <div style="text-align:center;padding:16px 0;">
+    <div style="font-size:48px;margin-bottom:16px;">⚠️</div>
+    <h2 style="font-size:20px;margin-bottom:8px;">Confirmer la suppression</h2>
+    <p style="color:var(--text3);">Vous êtes sur le point de supprimer le compte de <strong>{{ delete_user.get_full_name }}</strong>. Cette action est irréversible.</p>
+    <div style="display:flex;gap:12px;justify-content:center;margin-top:24px;">
+      <form method="post">{% csrf_token %}<button type="submit" class="btn btn-danger">Supprimer définitivement</button></form>
+      <a href="{% url 'user_list' %}" class="btn btn-secondary">Annuler</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+{% block title %}Assurances{% endblock %}
+{% block page_title %}Assurances{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{% if own_view %}Mes assurances{% else %}Gestion des assurances{% endif %}</h1>
+    {% if not own_view %}<p class="page-breadcrumb">{{ insurances|length }} contrat(s) au total{% if expiring_soon %} · <span style="color:var(--warning);">⚠️ {{ expiring_soon }} expirant bientôt</span>{% endif %}</p>{% endif %}
+  </div>
+  {% if user.role == 'admin' %}
+  <a href="{% url 'insurance_create' %}" class="btn btn-primary">
+    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+    Nouvelle assurance
+  </a>
+  {% endif %}
+</div>
+
+{% if not own_view %}
+<!-- Filtres admin/enseignant -->
+<div class="card" style="margin-bottom:16px;">
+  <form method="get" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+    <div style="flex:2;min-width:180px;">
+      <label class="form-label">Recherche</label>
+      <input type="text" name="q" value="{{ search }}" class="form-input" placeholder="Nom, compagnie, n° police…">
+    </div>
+    <div style="flex:1;min-width:140px;">
+      <label class="form-label">Rôle</label>
+      <select name="role" class="form-select">
+        <option value="">Tous</option>
+        <option value="student" {% if role_filter == 'student' %}selected{% endif %}>Élèves</option>
+        <option value="teacher" {% if role_filter == 'teacher' %}selected{% endif %}>Enseignants</option>
+        <option value="admin"   {% if role_filter == 'admin'   %}selected{% endif %}>Administrateurs</option>
+      </select>
+    </div>
+    <div style="flex:1;min-width:140px;">
+      <label class="form-label">Type</label>
+      <select name="type" class="form-select">
+        <option value="">Tous types</option>
+        {% for val, label in type_choices %}
+        <option value="{{ val }}" {% if type_filter == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div style="flex:1;min-width:140px;">
+      <label class="form-label">Statut</label>
+      <select name="status" class="form-select">
+        <option value="">Tous statuts</option>
+        {% for val, label in status_choices %}
+        <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button type="submit" class="btn btn-primary">Filtrer</button>
+      <a href="{% url 'insurance_list' %}" class="btn btn-secondary">Reset</a>
+    </div>
+  </form>
+</div>
+{% endif %}
+
+{% if insurances %}
+<div class="card">
+  <div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;">
+      <thead>
+        <tr style="border-bottom:2px solid var(--border);">
+          <th style="padding:10px 12px;text-align:left;font-size:12px;color:var(--text3);text-transform:uppercase;">Assuré</th>
+          <th style="padding:10px 12px;text-align:left;font-size:12px;color:var(--text3);text-transform:uppercase;">Type</th>
+          <th style="padding:10px 12px;text-align:left;font-size:12px;color:var(--text3);text-transform:uppercase;">Compagnie / N° police</th>
+          <th style="padding:10px 12px;text-align:left;font-size:12px;color:var(--text3);text-transform:uppercase;">Période</th>
+          <th style="padding:10px 12px;text-align:right;font-size:12px;color:var(--text3);text-transform:uppercase;">Prime (FCFA)</th>
+          <th style="padding:10px 12px;text-align:center;font-size:12px;color:var(--text3);text-transform:uppercase;">Statut</th>
+          {% if user.role == 'admin' %}
+          <th style="padding:10px 12px;text-align:center;font-size:12px;color:var(--text3);text-transform:uppercase;">Actions</th>
+          {% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for ins in insurances %}
+        {% with days=ins.days_until_expiry %}
+        <tr style="border-bottom:1px solid var(--border);transition:background .15s;"
+            onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
+          <td style="padding:12px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div class="avatar" style="width:34px;height:34px;font-size:12px;flex-shrink:0;">
+                {% if ins.user.avatar %}<img src="{{ ins.user.avatar.url }}" alt="">
+                {% else %}{{ ins.user.first_name|first|upper }}{{ ins.user.last_name|first|upper }}{% endif %}
+              </div>
+              <div>
+                <div style="font-weight:600;font-size:13px;">{{ ins.user.get_full_name }}</div>
+                <span class="badge {% if ins.user.role == 'student' %}badge-blue{% elif ins.user.role == 'teacher' %}badge-green{% else %}badge-purple{% endif %}" style="font-size:10px;">{{ ins.user.get_role_display }}</span>
+              </div>
+            </div>
+          </td>
+          <td style="padding:12px;">
+            <span style="font-size:13px;font-weight:500;">{{ ins.get_insurance_type_display }}</span>
+            {% if ins.beneficiary %}<div style="font-size:11px;color:var(--text3);">Bénéf. : {{ ins.beneficiary|truncatechars:30 }}</div>{% endif %}
+          </td>
+          <td style="padding:12px;">
+            <div style="font-weight:600;font-size:13px;">{{ ins.company }}</div>
+            <div style="font-size:11px;color:var(--text3);font-family:monospace;">{{ ins.policy_number }}</div>
+          </td>
+          <td style="padding:12px;font-size:12px;">
+            <div>📅 {{ ins.start_date|date:"d/m/Y" }}</div>
+            <div style="color:{% if days < 0 %}var(--danger){% elif days < 30 %}var(--warning){% else %}var(--text3){% endif %};">
+              ⏳ {{ ins.end_date|date:"d/m/Y" }}
+              {% if days >= 0 and days <= 30 %}
+              <span style="font-size:10px;background:rgba(245,158,11,0.15);color:var(--warning);padding:1px 6px;border-radius:10px;margin-left:4px;">{{ days }}j</span>
+              {% elif days < 0 %}
+              <span style="font-size:10px;background:rgba(239,68,68,0.15);color:var(--danger);padding:1px 6px;border-radius:10px;margin-left:4px;">Expirée</span>
+              {% endif %}
+            </div>
+          </td>
+          <td style="padding:12px;text-align:right;font-size:13px;">
+            {% if ins.premium_amount %}{{ ins.premium_amount|floatformat:0 }}{% else %}—{% endif %}
+          </td>
+          <td style="padding:12px;text-align:center;">
+            {% if ins.status == 'active' %}
+              <span class="badge badge-green">✅ Active</span>
+            {% elif ins.status == 'expired' %}
+              <span class="badge badge-red">Expirée</span>
+            {% elif ins.status == 'pending' %}
+              <span class="badge badge-yellow">En attente</span>
+            {% else %}
+              <span class="badge" style="background:var(--bg3);color:var(--text3);">Résiliée</span>
+            {% endif %}
+          </td>
+          {% if user.role == 'admin' %}
+          <td style="padding:12px;text-align:center;">
+            <div style="display:flex;gap:6px;justify-content:center;">
+              <a href="{% url 'insurance_edit' ins.pk %}" class="btn btn-secondary btn-sm" title="Modifier">✏️</a>
+              <a href="{% url 'insurance_delete' ins.pk %}" class="btn btn-danger btn-sm" title="Supprimer">🗑️</a>
+              {% if ins.document %}
+              <a href="{{ ins.document.url }}" class="btn btn-secondary btn-sm" title="Document" target="_blank">📄</a>
+              {% endif %}
+            </div>
+          </td>
+          {% endif %}
+        </tr>
+        {% endwith %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card">
+  <div class="empty-state">
+    <div class="icon">🛡️</div>
+    <h3>Aucune assurance enregistrée</h3>
+    <p>{% if own_view %}Aucune assurance n'est associée à votre compte.{% else %}Commencez par ajouter des contrats d'assurance.{% endif %}</p>
+    {% if user.role == 'admin' %}
+    <a href="{% url 'insurance_create' %}" class="btn btn-primary" style="margin-top:16px;">Ajouter une assurance</a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

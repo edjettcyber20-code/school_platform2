@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}Assurances{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">{{ title }}</h1>
+  <a href="{% url 'insurance_list' %}" class="btn btn-secondary">← Retour aux assurances</a>
+</div>
+
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+
+    <!-- Colonne gauche : identité du contrat -->
+    <div class="card">
+      <div class="card-title" style="margin-bottom:16px;">📋 Contrat</div>
+
+      <div class="form-group" style="margin-bottom:14px;">
+        <label class="form-label">Assuré <span style="color:var(--danger)">*</span></label>
+        <select name="user" class="form-select" required>
+          <option value="">-- Choisir une personne --</option>
+          {% for val, label in form.user.field.choices %}
+          {% if val %}
+          <option value="{{ val }}" {% if form.user.value|stringformat:'s' == val|stringformat:'s' %}selected{% endif %}>{{ label }}</option>
+          {% endif %}
+          {% endfor %}
+        </select>
+        {% if form.user.errors %}<p style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.user.errors|join:', ' }}</p>{% endif %}
+      </div>
+
+      <div class="form-group" style="margin-bottom:14px;">
+        <label class="form-label">Type d'assurance <span style="color:var(--danger)">*</span></label>
+        <select name="insurance_type" class="form-select" required>
+          {% for val, label in form.insurance_type.field.choices %}
+          <option value="{{ val }}" {% if form.insurance_type.value == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group" style="margin-bottom:14px;">
+        <label class="form-label">Compagnie d'assurance <span style="color:var(--danger)">*</span></label>
+        <input type="text" name="company" value="{{ form.company.value|default:'' }}" class="form-input" placeholder="Ex : NSIA, ALLIANZ, AXA…" required>
+      </div>
+
+      <div class="form-group" style="margin-bottom:14px;">
+        <label class="form-label">N° police / contrat <span style="color:var(--danger)">*</span></label>
+        <input type="text" name="policy_number" value="{{ form.policy_number.value|default:'' }}" class="form-input" placeholder="Ex : POL-2025-XXXX" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Bénéficiaire(s)</label>
+        <input type="text" name="beneficiary" value="{{ form.beneficiary.value|default:'' }}" class="form-input" placeholder="Nom du ou des bénéficiaires">
+      </div>
+    </div>
+
+    <!-- Colonne droite : dates, montants, statut -->
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <div class="card">
+        <div class="card-title" style="margin-bottom:16px;">📅 Période & Montants</div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+          <div class="form-group">
+            <label class="form-label">Date de début <span style="color:var(--danger)">*</span></label>
+            <input type="date" name="start_date" value="{{ form.start_date.value|default:'' }}" class="form-input" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Date d'expiration <span style="color:var(--danger)">*</span></label>
+            <input type="date" name="end_date" value="{{ form.end_date.value|default:'' }}" class="form-input" required>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+          <div class="form-group">
+            <label class="form-label">Montant couvert (FCFA)</label>
+            <input type="number" name="coverage_amount" value="{{ form.coverage_amount.value|default:'' }}" class="form-input" placeholder="0">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Prime annuelle (FCFA)</label>
+            <input type="number" name="premium_amount" value="{{ form.premium_amount.value|default:'' }}" class="form-input" placeholder="0">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Statut</label>
+          <select name="status" class="form-select">
+            {% for val, label in form.status.field.choices %}
+            <option value="{{ val }}" {% if form.status.value == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="margin-bottom:16px;">📎 Document & Notes</div>
+        <div class="form-group" style="margin-bottom:14px;">
+          <label class="form-label">Document (PDF, image)</label>
+          <input type="file" name="document" class="form-input" accept=".pdf,.jpg,.jpeg,.png">
+          {% if insurance and insurance.document %}
+          <p style="font-size:11px;color:var(--text3);margin-top:4px;">
+            Document actuel : <a href="{{ insurance.document.url }}" target="_blank" style="color:var(--accent);">📄 Voir</a>
+          </p>
+          {% endif %}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Notes internes</label>
+          <textarea name="notes" class="form-textarea" rows="3" placeholder="Observations, clauses particulières…">{{ form.notes.value|default:'' }}</textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:12px;margin-top:8px;padding-top:16px;border-top:1px solid var(--border);">
+    <button type="submit" class="btn btn-primary">
+      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+      {% if action == 'edit' %}Mettre à jour{% else %}Créer l'assurance{% endif %}
+    </button>
+    <a href="{% url 'insurance_list' %}" class="btn btn-secondary">Annuler</a>
+  </div>
+</form>
+{% endblock %}

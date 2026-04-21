@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block title %}Modifier le bulletin{% endblock %}
+{% block page_title %}Modifier le bulletin{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Modifier le bulletin</h1>
+  <a href="{% url 'report_card_detail' rc.pk %}" class="btn btn-secondary">← Retour</a>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+  <div class="card">
+    <div class="card-header"><div class="card-title">📝 Informations</div></div>
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-group">
+        <label class="form-label">Appréciation du professeur principal</label>
+        <textarea name="class_teacher_comment" class="form-textarea" rows="4">{{ rc.class_teacher_comment }}</textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Décision du conseil de classe / Direction</label>
+        <textarea name="principal_comment" class="form-textarea" rows="3">{{ rc.principal_comment }}</textarea>
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Conduite</label>
+          <select name="conduct_grade" class="form-select">
+            <option value="A+" {% if rc.conduct_grade == 'A+' %}selected{% endif %}>Très bien</option>
+            <option value="A"  {% if rc.conduct_grade == 'A'  %}selected{% endif %}>Bien</option>
+            <option value="B"  {% if rc.conduct_grade == 'B'  %}selected{% endif %}>Assez bien</option>
+            <option value="C"  {% if rc.conduct_grade == 'C'  %}selected{% endif %}>Passable</option>
+            <option value="D"  {% if rc.conduct_grade == 'D'  %}selected{% endif %}>Insuffisant</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Statut du bulletin</label>
+          <select name="status" class="form-select">
+            <option value="draft"     {% if rc.status == 'draft' %}selected{% endif %}>Brouillon</option>
+            <option value="published" {% if rc.status == 'published' %}selected{% endif %}>Publié</option>
+            <option value="archived"  {% if rc.status == 'archived' %}selected{% endif %}>Archivé</option>
+          </select>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary">Enregistrer</button>
+    </form>
+  </div>
+  <div class="card">
+    <div class="card-header"><div class="card-title">💬 Commentaires par matière</div></div>
+    {% for sg in sgs %}
+    <form method="post" action="{% url 'sg_comment' sg.pk %}" style="margin-bottom:12px;">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{% url 'report_card_edit' rc.pk %}">
+      <label class="form-label">
+        <span style="width:8px;height:8px;border-radius:50%;background:{{ sg.subject.color }};display:inline-block;margin-right:4px;"></span>
+        {{ sg.subject.name }} {% if sg.average %}({{ sg.average }}/20){% endif %}
+      </label>
+      <div style="display:flex;gap:8px;">
+        <input type="text" name="comment" class="form-input" placeholder="Commentaire enseignant…" value="{{ sg.teacher_comment }}" style="flex:1;">
+        <button type="submit" class="btn btn-secondary btn-sm">Sauver</button>
+      </div>
+    </form>
+    {% empty %}<div class="empty-state"><p>Aucune matière notée</p></div>{% endfor %}
+  </div>
+</div>
+{% endblock %}

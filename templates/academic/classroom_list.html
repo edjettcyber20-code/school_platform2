@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}Classes{% endblock %}
+{% block page_title %}Gestion des classes{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Classes</h1>
+    <p class="page-breadcrumb">{{ classrooms.count }} classe(s) au total</p>
+  </div>
+  {% if user.role == 'admin' %}
+  <div style="display:flex;gap:10px;">
+    <a href="{% url 'enrollment_create' %}" class="btn btn-secondary">
+      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+      Inscrire un élève
+    </a>
+    <a href="{% url 'classroom_create' %}" class="btn btn-primary">
+      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      Nouvelle classe
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+{% if classrooms %}
+<div class="grid-auto">
+  {% for cls in classrooms %}
+  <div style="position:relative;">
+    <a href="{% url 'classroom_detail' cls.pk %}" class="class-card">
+      <div class="class-card-top">
+        <div class="class-icon">🏫</div>
+        <span class="badge badge-blue">{{ cls.school_year }}</span>
+      </div>
+      <div class="class-name">{{ cls.name }}</div>
+      <div class="class-meta">{{ cls.level.name }} &middot; Capacité: {{ cls.capacity }}</div>
+      <div class="class-stats">
+        <div class="class-stat"><strong>{{ cls.student_count }}</strong>Élèves</div>
+        <div class="class-stat"><strong>{{ cls.subjects.count }}</strong>Matières</div>
+        <div class="class-stat"><strong>{{ cls.teachers.count }}</strong>Profs</div>
+      </div>
+    </a>
+    {% if user.role == 'admin' %}
+    <div style="position:absolute;top:12px;right:12px;display:flex;gap:6px;">
+      <a href="{% url 'classroom_edit' cls.pk %}" class="btn btn-secondary btn-xs">✏️</a>
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card"><div class="empty-state"><div class="icon">🏫</div><h3>Aucune classe créée</h3><p>Commencez par créer une classe</p>{% if user.role == 'admin' %}<a href="{% url 'classroom_create' %}" class="btn btn-primary" style="margin-top:16px;">Créer une classe</a>{% endif %}</div></div>
+{% endif %}
+{% endblock %}

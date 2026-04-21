@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% block title %}Présences — {{ student.get_full_name }}{% endblock %}
+{% block page_title %}Suivi des présences{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div style="display:flex;align-items:center;gap:14px;">
+    <a href="{% url 'student_detail' student.pk %}" class="btn-icon">
+      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+    </a>
+    <div>
+      <h1 class="page-title">{{ student.get_full_name }}</h1>
+      <p class="page-breadcrumb">Historique complet des présences</p>
+    </div>
+  </div>
+  {% if user.role in 'admin,teacher' %}
+  <a href="{% url 'bulk_attendance' %}" class="btn btn-primary btn-sm">+ Enregistrer</a>
+  {% endif %}
+</div>
+
+<!-- Filtres -->
+<div class="card" style="margin-bottom:16px;">
+  <form method="get" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+    <div style="flex:1;min-width:180px;">
+      <label class="form-label">Filtrer par trimestre</label>
+      <select name="trimester" class="form-select" onchange="this.form.submit()">
+        <option value="">Toute l'année</option>
+        {% for t in trimesters %}<option value="{{ t.pk }}" {% if selected_trimester == t.pk|stringformat:'s' %}selected{% endif %}>{{ t }}</option>{% endfor %}
+      </select>
+    </div>
+    <a href="{% url 'student_attendance' student.pk %}" class="btn btn-secondary btn-sm">Réinitialiser</a>
+  </form>
+</div>
+
+<!-- Stats -->
+<div class="stats-grid" style="margin-bottom:16px;">
+  <div class="stat-card green">
+    <div class="stat-icon green">✅</div>
+    <div class="stat-value">{{ stats.present }}</div>
+    <div class="stat-label">Présences</div>
+  </div>
+  <div class="stat-card blue">
+    <div class="stat-icon blue">📊</div>
+    <div class="stat-value">{{ stats.rate }}%</div>
+    <div class="stat-label">Taux d'assiduité</div>
+  </div>
+  <div class="stat-card orange">
+    <div class="stat-icon orange">❌</div>
+    <div class="stat-value">{{ stats.absent }}</div>
+    <div class="stat-label">Absences</div>
+  </div>
+  <div class="stat-card purple">
+    <div class="stat-icon purple">⏰</div>
+    <div class="stat-value">{{ stats.late }}</div>
+    <div class="stat-label">Retards</div>
+  </div>
+</div>
+
+<!-- Taux bar -->
+<div class="card" style="margin-bottom:16px;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+    <span style="font-weight:600;font-size:14px;">Taux d'assiduité global</span>
+    <span style="font-size:18px;font-weight:800;color:{% if stats.rate >= 90 %}var(--success){% elif stats.rate >= 75 %}var(--warning){% else %}var(--danger){% endif %};">{{ stats.rate }}%</span>
+  </div>
+  <div style="background:var(--bg3);border-radius:8px;height:12px;overflow:hidden;">
+    <div style="height:100%;width:{{ stats.rate }}%;background:{% if stats.rate >= 90 %}var(--success){% elif stats.rate >= 75 %}var(--warning){% else %}var(--danger){% endif %};border-radius:8px;transition:width 1s ease;"></div>
+  </div>
+  <div style="display:flex;gap:16px;margin-top:8px;font-size:12px;color:var(--text3);">
+    <span>📊 {{ stats.total }} séance(s) au total</span>
+    <span>✅ {{ stats.excused }} absence(s) justifiée(s)</span>
+  </div>
+</div>
+
+<!-- Par matière -->
+{% if by_subject %}
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-header"><div class="card-title">📚 Présences par matière</div></div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;">
+    {% for subject_name, counts in by_subject.items %}
+    <div style="padding:14px;background:var(--card2);border-radius:10px;border:1px solid var(--border);">
+      <div style="font-weight:700;font-size:13px;margin-bottom:10px;">{{ subject_name }}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <span style="font-size:12px;color:var(--success);">✅ {{ counts.present }}</span>
+        <span style="font-size:12px;color:var(--danger);">❌ {{ counts.absent }}</span>
+        {% if counts.late %}<span style="font-size:12px;color:var(--warning);">⏰ {{ counts.late }}</span>{% endif %}
+        {% if counts.excused %}<span style="font-size:12px;color:var(--accent);">📋 {{ counts.excused }}</span>{% endif %}
+      </div>
+      {% with total=counts.present|add:counts.absent|add:counts.late %}
+      {% if total > 0 %}
+      <div style="background:var(--bg3);border-radius:4px;height:6px;margin-top:8px;overflow:hidden;">
+        <div style="height:100%;width:{% widthratio counts.present total 100 %}%;background:var(--success);border-radius:4px;"></div>
+      </div>
+      {% endif %}
+      {% endwith %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Liste complète -->
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">📋 Historique détaillé ({{ attendances.count }})</div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Date</th><th>Matière</th><th>Créneau</th><th>Statut</th><th>Remarque</th></tr></thead>
+      <tbody>
+        {% for att in attendances %}
+        <tr>
+          <td style="font-weight:600;">{{ att.date|date:"d/m/Y" }}</td>
+          <td>{{ att.schedule.subject.name }}</td>
+          <td style="color:var(--text3);font-size:12px;">{{ att.schedule.get_day_display }} {{ att.schedule.start_time|time:"H:i" }}–{{ att.schedule.end_time|time:"H:i" }}</td>
+          <td>
+            <span class="badge {% if att.status == 'present' %}badge-green{% elif att.status == 'absent' %}badge-red{% elif att.status == 'late' %}badge-yellow{% else %}badge-blue{% endif %}">
+              {% if att.status == 'present' %}✅{% elif att.status == 'absent' %}❌{% elif att.status == 'late' %}⏰{% else %}📋{% endif %}
+              {{ att.get_status_display }}
+            </span>
+          </td>
+          <td style="color:var(--text3);font-size:12px;font-style:italic;">{{ att.note|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5"><div class="empty-state"><p>Aucune donnée de présence</p></div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

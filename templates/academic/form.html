@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% load dict_extras %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">{{ title }}</h1>
+  <a href="{% url back_url %}" class="btn btn-secondary">← Retour</a>
+</div>
+<div class="card" style="max-width:700px;">
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {% if messages %}
+    <div style="margin-bottom:16px;">
+      {% for msg in messages %}
+      <div class="alert alert-{{ msg.tags }}" style="padding:10px 14px;border-radius:8px;background:rgba(239,68,68,0.15);border:1px solid var(--danger);color:var(--danger);font-size:13px;margin-bottom:8px;">
+        ⚠️ {{ msg }}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    <div class="form-grid">
+      {% for field in form %}
+      {% if not field.is_hidden %}
+      <div class="form-group">
+        {% if field.field.widget.input_type != 'checkbox' %}
+        <label class="form-label">{{ field.label }}{% if field.field.required %} <span style="color:var(--danger);">*</span>{% endif %}</label>
+        {% endif %}
+
+        {% if field|is_checkbox_select %}
+          <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:8px;padding:12px;max-height:160px;overflow-y:auto;">
+            {% for choice_val, choice_label in field.field.choices %}
+            <label style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;font-size:13px;">
+              <input type="checkbox" name="{{ field.html_name }}" value="{{ choice_val }}"
+                {% if choice_val|stringformat:'s' in field.value|stringformat:'s' %}checked{% endif %}>
+              {{ choice_label }}
+            </label>
+            {% endfor %}
+          </div>
+        {% elif field.field.widget.input_type == 'select' %}
+          <select name="{{ field.html_name }}" class="form-select"
+            {% if field.field.required %}required{% endif %}
+            id="{{ field.auto_id }}">
+            {% for val, label in field.field.choices %}
+            <option value="{{ val }}"
+              {% if field.value|stringformat:'s' == val|stringformat:'s' %}selected{% endif %}>
+              {{ label }}
+            </option>
+            {% endfor %}
+          </select>
+        {% elif field.field.widget.input_type == 'checkbox' %}
+          <div style="display:flex;align-items:center;gap:8px;padding-top:4px;">
+            <input type="checkbox" name="{{ field.html_name }}" id="{{ field.auto_id }}"
+              {% if field.value %}checked{% endif %}
+              style="width:18px;height:18px;cursor:pointer;accent-color:var(--accent);">
+            <label for="{{ field.auto_id }}" style="font-size:14px;cursor:pointer;color:var(--text1);">{{ field.label }}</label>
+          </div>
+        {% elif field.field.widget.input_type == 'textarea' %}
+          <textarea name="{{ field.html_name }}" class="form-textarea"
+            {% if field.field.required %}required{% endif %}
+            rows="3">{{ field.value|default:'' }}</textarea>
+        {% elif field.field.widget.input_type == 'file' %}
+          <input type="file" name="{{ field.html_name }}" class="form-input"
+            {% if field.field.required %}required{% endif %}>
+        {% else %}
+          <input type="{{ field.field.widget.input_type|default:'text' }}"
+            name="{{ field.html_name }}"
+            value="{{ field.value|default:'' }}"
+            class="form-input"
+            {% if field.field.required %}required{% endif %}>
+        {% endif %}
+
+        {% if field.errors %}
+        <p class="form-error" style="color:var(--danger);font-size:12px;margin-top:4px;">⚠️ {{ field.errors|join:', ' }}</p>
+        {% endif %}
+        {% if field.help_text %}
+        <p style="font-size:11px;color:var(--text3);margin-top:4px;">{{ field.help_text }}</p>
+        {% endif %}
+      </div>
+      {% else %}
+        {{ field }}
+      {% endif %}
+      {% endfor %}
+    </div>
+    <div style="display:flex;gap:12px;margin-top:8px;padding-top:16px;border-top:1px solid var(--border);">
+      <button type="submit" class="btn btn-primary">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        Enregistrer
+      </button>
+      <a href="{% url back_url %}" class="btn btn-secondary">Annuler</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

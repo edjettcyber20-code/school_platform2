@@ -1,0 +1,292 @@
+{% extends 'base.html' %}
+{% block title %}{{ student.get_full_name }}{% endblock %}
+{% block page_title %}Fiche élève{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div style="display:flex;align-items:center;gap:16px;">
+    <a href="{% url 'student_list' %}" class="btn-icon">
+      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+    </a>
+    <div>
+      <h1 class="page-title">{{ student.get_full_name }}</h1>
+      <p class="page-breadcrumb">
+        {% if profile %}{{ profile.student_id }} · {% endif %}
+        {% for enr in enrollments %}{{ enr.classroom.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+      </p>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    {% if user.role in 'admin,teacher' %}
+    <a href="{% url 'medical_edit' student.pk %}" class="btn btn-secondary btn-sm">🏥 Médical</a>
+    <a href="{% url 'document_upload' student.pk %}" class="btn btn-secondary btn-sm">📎 Document</a>
+    <a href="{% url 'user_edit' student.pk %}" class="btn btn-secondary btn-sm">✏️ Modifier</a>
+    {% endif %}
+    <a href="{% url 'student_attendance' student.pk %}" class="btn btn-primary btn-sm">📅 Présences</a>
+  </div>
+</div>
+
+<!-- ── TOP: ID CARD ─────────────────────────────────────────────────────── -->
+<div style="display:grid;grid-template-columns:280px 1fr;gap:16px;margin-bottom:16px;">
+
+  <!-- Avatar + résumé -->
+  <div class="card" style="text-align:center;background:linear-gradient(160deg,var(--card) 60%,rgba(79,156,249,0.05) 100%);">
+    <div class="avatar" style="width:80px;height:80px;font-size:28px;border-radius:20px;margin:0 auto 14px;box-shadow:0 6px 20px rgba(79,156,249,0.25);">
+      {% if student.avatar %}<img src="{{ student.avatar.url }}" alt="">{% else %}{{ student.first_name|first|upper }}{{ student.last_name|first|upper }}{% endif %}
+    </div>
+    <div style="font-weight:800;font-size:17px;">{{ student.get_full_name }}</div>
+    <div style="margin:6px 0;"><span class="role-badge role-student">Élève</span></div>
+    {% if profile %}<div style="font-size:12px;color:var(--text3);margin-top:4px;">N° {{ profile.student_id }}</div>{% endif %}
+    <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px;">
+      <div style="display:flex;align-items:center;gap:8px;font-size:13px;">
+        <span style="color:var(--text3);">📧</span> <span style="overflow:hidden;text-overflow:ellipsis;">{{ student.email }}</span>
+      </div>
+      {% if student.phone %}<div style="display:flex;align-items:center;gap:8px;font-size:13px;"><span style="color:var(--text3);">📱</span> {{ student.phone }}</div>{% endif %}
+      {% if student.date_of_birth %}<div style="display:flex;align-items:center;gap:8px;font-size:13px;"><span style="color:var(--text3);">🎂</span> {{ student.date_of_birth|date:"d/m/Y" }}</div>{% endif %}
+      {% if student.address %}<div style="display:flex;align-items:flex-start;gap:8px;font-size:13px;"><span style="color:var(--text3);">📍</span> {{ student.address }}</div>{% endif %}
+    </div>
+    {% if profile and profile.parents.exists %}
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text3);margin-bottom:8px;">Parents / Tuteurs</div>
+      {% for parent in profile.parents.all %}
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <div class="avatar" style="width:28px;height:28px;font-size:11px;">{{ parent.first_name|first|upper }}</div>
+        <div style="font-size:12px;">{{ parent.get_full_name }}<br><span style="color:var(--text3);">{{ parent.phone|default:parent.email }}</span></div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Stats rapides -->
+  <div style="display:flex;flex-direction:column;gap:14px;">
+    <!-- Attendance bar -->
+    <div class="card">
+      <div class="card-header" style="margin-bottom:14px;">
+        <div class="card-title">📊 Assiduité</div>
+        <a href="{% url 'student_attendance' student.pk %}" class="btn btn-secondary btn-sm">Détails</a>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;">
+        <div style="text-align:center;padding:10px;background:rgba(34,197,94,0.08);border-radius:10px;border:1px solid rgba(34,197,94,0.15);">
+          <div style="font-size:22px;font-weight:800;color:var(--success);">{{ att_stats.present }}</div>
+          <div style="font-size:11px;color:var(--text3);">Présences</div>
+        </div>
+        <div style="text-align:center;padding:10px;background:rgba(239,68,68,0.08);border-radius:10px;border:1px solid rgba(239,68,68,0.15);">
+          <div style="font-size:22px;font-weight:800;color:var(--danger);">{{ att_stats.absent }}</div>
+          <div style="font-size:11px;color:var(--text3);">Absences</div>
+        </div>
+        <div style="text-align:center;padding:10px;background:rgba(245,158,11,0.08);border-radius:10px;border:1px solid rgba(245,158,11,0.15);">
+          <div style="font-size:22px;font-weight:800;color:var(--warning);">{{ att_stats.late }}</div>
+          <div style="font-size:11px;color:var(--text3);">Retards</div>
+        </div>
+        <div style="text-align:center;padding:10px;background:rgba(79,156,249,0.08);border-radius:10px;border:1px solid rgba(79,156,249,0.15);">
+          <div style="font-size:22px;font-weight:800;color:var(--accent);">{{ att_stats.rate }}%</div>
+          <div style="font-size:11px;color:var(--text3);">Taux présence</div>
+        </div>
+      </div>
+      <div style="background:var(--bg3);border-radius:6px;height:8px;overflow:hidden;">
+        <div style="height:100%;width:{{ att_stats.rate }}%;background:{% if att_stats.rate >= 90 %}var(--success){% elif att_stats.rate >= 75 %}var(--warning){% else %}var(--danger){% endif %};border-radius:6px;transition:width 0.8s;"></div>
+      </div>
+    </div>
+
+    <!-- Bulletins -->
+    <div class="card" style="flex:1;">
+      <div class="card-header" style="margin-bottom:12px;">
+        <div class="card-title">📋 Bulletins de notes</div>
+        <a href="{% url 'report_card_list' %}" class="btn btn-secondary btn-sm">Voir tout</a>
+      </div>
+      {% if report_cards %}
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        {% for rc in report_cards %}
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--card2);border-radius:10px;border:1px solid var(--border);">
+          <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:white;">T{{ rc.trimester.number }}</div>
+          <div style="flex:1;">
+            <div style="font-weight:600;font-size:13px;">{{ rc.trimester.get_number_display }} {{ rc.trimester.school_year }}</div>
+            <div style="font-size:12px;color:var(--text3);">{{ rc.classroom.name }}</div>
+          </div>
+          {% if rc.general_average %}
+          <div style="text-align:right;">
+            <div style="font-size:18px;font-weight:800;color:{% if rc.general_average >= 14 %}var(--success){% elif rc.general_average >= 10 %}var(--warning){% else %}var(--danger){% endif %};">{{ rc.general_average }}/20</div>
+            {% if rc.rank %}<div style="font-size:11px;color:var(--text3);">{{ rc.rank }}{% if rc.rank == 1 %}er{% else %}ème{% endif %}/{{ rc.class_size }}</div>{% endif %}
+          </div>
+          {% endif %}
+          <div style="display:flex;gap:6px;">
+            <a href="{% url 'report_card_detail' rc.pk %}" class="btn btn-secondary btn-xs">👁️</a>
+            <a href="{% url 'report_card_pdf' rc.pk %}" class="btn btn-primary btn-xs">📥 PDF</a>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state"><p>Aucun bulletin disponible</p></div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- ── TABS ──────────────────────────────────────────────────────────────── -->
+<div style="display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:0;">
+  <button onclick="showTab('notes')" id="tab-notes" class="tab-btn active">⭐ Notes récentes</button>
+  <button onclick="showTab('absences')" id="tab-absences" class="tab-btn">📅 Absences récentes</button>
+  {% if medical %}<button onclick="showTab('medical')" id="tab-medical" class="tab-btn">🏥 Dossier médical</button>{% endif %}
+  <button onclick="showTab('docs')" id="tab-docs" class="tab-btn">📎 Documents</button>
+</div>
+
+<!-- NOTES -->
+<div id="panel-notes" class="tab-panel">
+  <div class="card">
+    <div class="card-header"><div class="card-title">Dernières notes</div></div>
+    {% if recent_grades %}
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Devoir</th><th>Matière</th><th>Type</th><th>Note</th><th>/ Max</th><th>Commentaire</th><th>Date</th></tr></thead>
+        <tbody>
+          {% for g in recent_grades %}
+          <tr>
+            <td style="font-weight:600;">{{ g.assignment.title }}</td>
+            <td><span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:8px;height:8px;border-radius:50%;background:{{ g.assignment.subject.color }};"></span>{{ g.assignment.subject.name }}</span></td>
+            <td><span class="badge badge-blue">{{ g.assignment.get_type_display }}</span></td>
+            <td><span style="font-weight:800;font-size:15px;color:{% if g.score >= 14 %}var(--success){% elif g.score >= 10 %}var(--warning){% else %}var(--danger){% endif %};">{{ g.score }}</span></td>
+            <td style="color:var(--text3);">/{{ g.assignment.max_score }}</td>
+            <td style="color:var(--text3);font-size:12px;font-style:italic;">{{ g.comment|default:"—" }}</td>
+            <td style="color:var(--text3);">{{ g.graded_at|date:"d/m/Y" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state"><p>Aucune note disponible</p></div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ABSENCES -->
+<div id="panel-absences" class="tab-panel" style="display:none;">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Historique des présences</div>
+      <a href="{% url 'student_attendance' student.pk %}" class="btn btn-secondary btn-sm">Voir tout</a>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Date</th><th>Matière</th><th>Statut</th><th>Note</th></tr></thead>
+        <tbody>
+          {% for att in attendances %}
+          <tr>
+            <td>{{ att.date|date:"d/m/Y" }}</td>
+            <td>{{ att.schedule.subject.name }}</td>
+            <td><span class="badge {% if att.status == 'present' %}badge-green{% elif att.status == 'absent' %}badge-red{% elif att.status == 'late' %}badge-yellow{% else %}badge-blue{% endif %}">{{ att.get_status_display }}</span></td>
+            <td style="color:var(--text3);font-size:12px;">{{ att.note|default:"—" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4"><div class="empty-state"><p>Aucune donnée</p></div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- MEDICAL -->
+{% if medical %}
+<div id="panel-medical" class="tab-panel" style="display:none;">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">🏥 Dossier médical</div>
+      {% if user.role in 'admin,teacher' %}<a href="{% url 'medical_edit' student.pk %}" class="btn btn-secondary btn-sm">Modifier</a>{% endif %}
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;">
+      {% if medical.blood_type %}
+      <div style="padding:14px;background:var(--card2);border-radius:10px;border:1px solid var(--border);">
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;font-weight:700;margin-bottom:6px;">Groupe sanguin</div>
+        <div style="font-size:22px;font-weight:800;color:var(--danger);">{{ medical.blood_type }}</div>
+      </div>
+      {% endif %}
+      {% if medical.allergies %}
+      <div style="padding:14px;background:var(--card2);border-radius:10px;border:1px solid rgba(239,68,68,0.2);">
+        <div style="font-size:11px;color:var(--danger);text-transform:uppercase;font-weight:700;margin-bottom:6px;">⚠️ Allergies</div>
+        <div style="font-size:13px;">{{ medical.allergies }}</div>
+      </div>
+      {% endif %}
+      {% if medical.medical_conditions %}
+      <div style="padding:14px;background:var(--card2);border-radius:10px;border:1px solid var(--border);">
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;font-weight:700;margin-bottom:6px;">Conditions médicales</div>
+        <div style="font-size:13px;">{{ medical.medical_conditions }}</div>
+      </div>
+      {% endif %}
+      {% if medical.emergency_contact_name %}
+      <div style="padding:14px;background:var(--card2);border-radius:10px;border:1px solid rgba(249,115,22,0.2);">
+        <div style="font-size:11px;color:var(--accent4);text-transform:uppercase;font-weight:700;margin-bottom:6px;">🚨 Contact urgence</div>
+        <div style="font-size:13px;font-weight:600;">{{ medical.emergency_contact_name }}</div>
+        <div style="font-size:12px;color:var(--text3);">{{ medical.emergency_contact_phone }}</div>
+      </div>
+      {% endif %}
+      {% if medical.doctor_name %}
+      <div style="padding:14px;background:var(--card2);border-radius:10px;border:1px solid var(--border);">
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;font-weight:700;margin-bottom:6px;">Médecin</div>
+        <div style="font-size:13px;font-weight:600;">Dr. {{ medical.doctor_name }}</div>
+        <div style="font-size:12px;color:var(--text3);">{{ medical.doctor_phone }}</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- DOCUMENTS -->
+<div id="panel-docs" class="tab-panel" style="display:none;">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">📎 Documents scolaires</div>
+      {% if user.role in 'admin,teacher' %}<a href="{% url 'document_upload' student.pk %}" class="btn btn-secondary btn-sm">+ Ajouter</a>{% endif %}
+    </div>
+    {% if documents %}
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      {% for doc in documents %}
+      <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--card2);border-radius:10px;border:1px solid var(--border);">
+        <div style="width:40px;height:40px;border-radius:10px;background:rgba(79,156,249,0.1);display:flex;align-items:center;justify-content:center;font-size:20px;">
+          {% if doc.doc_type == 'report' %}📋{% elif doc.doc_type == 'certificate' %}🏅{% else %}📄{% endif %}
+        </div>
+        <div style="flex:1;">
+          <div style="font-weight:600;font-size:14px;">{{ doc.title }}</div>
+          <div style="font-size:12px;color:var(--text3);">{{ doc.get_doc_type_display }}{% if doc.school_year %} · {{ doc.school_year }}{% endif %} · {{ doc.uploaded_at|date:"d/m/Y" }}</div>
+        </div>
+        {% if doc.file %}
+        <a href="{{ doc.file.url }}" class="btn btn-primary btn-sm" target="_blank">📥 Télécharger</a>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state"><div class="icon">📎</div><h3>Aucun document</h3></div>
+    {% endif %}
+  </div>
+</div>
+
+<style>
+.tab-btn {
+  padding: 9px 18px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text3);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Outfit', sans-serif;
+  transition: all 0.2s;
+  margin-bottom: -1px;
+}
+.tab-btn:hover { color: var(--text2); }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+</style>
+<script>
+function showTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.style.display = 'none');
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-'+name).style.display = '';
+  document.getElementById('tab-'+name).classList.add('active');
+}
+</script>
+{% endblock %}

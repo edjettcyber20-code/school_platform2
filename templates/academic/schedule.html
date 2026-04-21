@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% load dict_extras %}
+{% block title %}Emploi du temps{% endblock %}
+{% block page_title %}Emploi du temps{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Emploi du temps</h1>
+    {% if selected_classroom %}<p class="page-breadcrumb">{{ selected_classroom.name }} &middot; {{ selected_classroom.level.name }}</p>{% endif %}
+  </div>
+  {% if user.role == 'admin' %}<a href="{% url 'schedule_create' %}" class="btn btn-primary">+ Ajouter un créneau</a>{% endif %}
+</div>
+
+{% if user.role == 'admin' or user.role == 'teacher' %}
+<div class="card" style="margin-bottom:20px;">
+  <form method="get" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+    <label class="form-label" style="margin:0;">Sélectionner une classe :</label>
+    <select name="classroom" class="form-select" style="width:240px;" onchange="this.form.submit()">
+      <option value="">-- Choisir une classe --</option>
+      {% for cls in classrooms %}
+      <option value="{{ cls.pk }}" {% if selected_classroom and selected_classroom.pk == cls.pk %}selected{% endif %}>{{ cls.name }} - {{ cls.level.name }}</option>
+      {% endfor %}
+    </select>
+  </form>
+</div>
+{% endif %}
+
+{% if schedule_by_day %}
+<div class="card">
+  <div class="schedule-grid">
+    <table class="schedule-table">
+      <thead>
+        <tr>
+          <th style="width:90px;">Horaire</th>
+          {% for day_key in days_order %}
+          {% with has_slots=schedule_by_day|dictsort:day_key %}
+          <th>{{ days_labels|get_item:day_key|default:day_key }}</th>
+          {% endwith %}
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% comment %}Simple day-based display{% endcomment %}
+        <tr>
+          <td style="padding:8px;font-size:12px;color:var(--text3);vertical-align:top;">
+            <div style="font-weight:600;">Cours</div>
+          </td>
+          {% for day_key in days_order %}
+          <td class="schedule-slot">
+            {% for slot in schedule_by_day|dictsort:day_key %}
+            {% if slot.day == day_key %}
+            <div class="schedule-item" style="background:rgba(79,156,249,0.08);border-color:{{ slot.subject.color }};color:var(--text);">
+              <div style="font-size:11px;color:var(--text3);">{{ slot.start_time|time:"H:i" }} - {{ slot.end_time|time:"H:i" }}</div>
+              <div style="font-weight:700;font-size:12px;">{{ slot.subject.name }}</div>
+              <div style="font-size:11px;color:var(--text3);">{{ slot.teacher.get_full_name }}</div>
+              {% if slot.room %}<div style="font-size:10px;color:var(--text3);">📍 {{ slot.room }}</div>{% endif %}
+            </div>
+            {% endif %}
+            {% endfor %}
+          </td>
+          {% endfor %}
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div style="margin-top:20px;">
+    <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">Détail des créneaux</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;">
+      {% for day_key in days_order %}
+      {% for slot in schedule_by_day|dictsort:day_key %}
+      {% if slot.day == day_key %}
+      <div style="background:var(--card2);border:1px solid var(--border);border-left:4px solid {{ slot.subject.color }};border-radius:10px;padding:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <span style="font-weight:700;font-size:13.5px;">{{ slot.subject.name }}</span>
+          <span class="badge badge-blue">{{ days_labels|get_item:slot.day }}</span>
+        </div>
+        <div style="font-size:12px;color:var(--text3);">🕐 {{ slot.start_time|time:"H:i" }} – {{ slot.end_time|time:"H:i" }}</div>
+        <div style="font-size:12px;color:var(--text3);">👨‍🏫 {{ slot.teacher.get_full_name }}</div>
+        {% if slot.room %}<div style="font-size:12px;color:var(--text3);">📍 {{ slot.room }}</div>{% endif %}
+        {% if slot.classroom %}<div style="font-size:12px;color:var(--text3);">🏫 {{ slot.classroom.name }}</div>{% endif %}
+      </div>
+      {% endif %}
+      {% endfor %}
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="card">
+  <div class="empty-state">
+    <div class="icon">📅</div>
+    <h3>Aucun créneau défini</h3>
+    <p>{% if user.role == 'admin' %}Commencez par ajouter des créneaux à l'emploi du temps.{% else %}Sélectionnez une classe pour voir son emploi du temps.{% endif %}</p>
+    {% if user.role == 'admin' %}<a href="{% url 'schedule_create' %}" class="btn btn-primary" style="margin-top:16px;">Ajouter un créneau</a>{% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% block title %}Utilisateurs{% endblock %}
+{% block page_title %}Gestion des utilisateurs{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Utilisateurs</h1>
+    <p class="page-breadcrumb">{{ users.count }} utilisateur(s) trouvé(s)</p>
+  </div>
+  <a href="{% url 'user_create' %}" class="btn btn-primary">
+    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+    Ajouter
+  </a>
+</div>
+
+<div class="card" style="margin-bottom:16px;">
+  <form method="get" style="display:flex;gap:12px;flex-wrap:wrap;">
+    <input type="text" name="q" class="form-input" placeholder="Rechercher..." value="{{ search }}" style="flex:1;min-width:200px;">
+    <select name="role" class="form-select" style="width:200px;">
+      <option value="">Tous les rôles</option>
+      <option value="admin" {% if role == 'admin' %}selected{% endif %}>Administrateur</option>
+      <option value="teacher" {% if role == 'teacher' %}selected{% endif %}>Enseignant</option>
+      <option value="student" {% if role == 'student' %}selected{% endif %}>Élève</option>
+      <option value="parent" {% if role == 'parent' %}selected{% endif %}>Parent</option>
+    </select>
+    <button type="submit" class="btn btn-secondary">Filtrer</button>
+    <a href="{% url 'user_list' %}" class="btn btn-secondary">Réinitialiser</a>
+  </form>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Utilisateur</th>
+          <th>Rôle</th>
+          <th>Email</th>
+          <th>Téléphone</th>
+          <th>Statut</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div class="avatar">
+                {% if u.avatar %}<img src="{{ u.avatar.url }}" alt="">{% else %}{{ u.first_name|first|upper }}{{ u.last_name|first|upper }}{% endif %}
+              </div>
+              <div>
+                <div style="font-weight:600;">{{ u.get_full_name }}</div>
+                <div style="font-size:12px;color:var(--text3);">Inscrit {{ u.date_joined|date:"d/m/Y" }}</div>
+              </div>
+            </div>
+          </td>
+          <td><span class="role-badge role-{{ u.role }}">{{ u.get_role_display }}</span></td>
+          <td style="color:var(--text2);">{{ u.email }}</td>
+          <td style="color:var(--text2);">{{ u.phone|default:"-" }}</td>
+          <td>
+            {% if u.is_active %}
+            <span class="badge badge-green">Actif</span>
+            {% else %}
+            <span class="badge badge-red">Inactif</span>
+            {% endif %}
+          </td>
+          <td>
+            <div style="display:flex;gap:6px;">
+              <a href="{% url 'user_edit' u.pk %}" class="btn btn-secondary btn-xs">Modifier</a>
+              <a href="{% url 'user_delete' u.pk %}" class="btn btn-danger btn-xs">Supprimer</a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6"><div class="empty-state"><div class="icon">👤</div><h3>Aucun utilisateur trouvé</h3></div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

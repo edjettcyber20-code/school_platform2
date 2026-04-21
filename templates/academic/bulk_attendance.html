@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+{% block title %}Saisie des présences{% endblock %}
+{% block page_title %}Saisie des présences{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Saisie en masse des présences</h1>
+    {% if selected_schedule %}
+      <p class="page-breadcrumb">{{ selected_schedule.subject.name }} · {{ selected_schedule.classroom.name }} · {{ selected_schedule.get_day_display }}</p>
+    {% elif selected_classroom %}
+      <p class="page-breadcrumb">Classe : {{ selected_classroom.name }}</p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Sélection classe + créneau -->
+<div class="card" style="margin-bottom:16px;">
+  <form method="get" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+
+    <!-- Étape 1 : sélection de la classe -->
+    <div style="flex:1;min-width:200px;">
+      <label class="form-label">Classe</label>
+      <select name="classroom" class="form-select" onchange="this.form.submit()">
+        <option value="">-- Choisir une classe --</option>
+        {% for cls in classrooms %}
+        <option value="{{ cls.pk }}"
+          {% if selected_classroom and selected_classroom.pk == cls.pk %}selected{% endif %}
+          {% if selected_schedule and selected_schedule.classroom.pk == cls.pk %}selected{% endif %}>
+          {{ cls.name }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Étape 2 : sélection du créneau (affiché seulement si une classe est sélectionnée) -->
+    {% if schedules %}
+    <div style="flex:1;min-width:200px;">
+      <label class="form-label">Créneau de cours</label>
+      <select name="schedule" class="form-select" onchange="this.form.submit()">
+        <option value="">-- Sélectionner un créneau --</option>
+        {% for s in schedules %}
+        <option value="{{ s.pk }}"
+          {% if selected_schedule and selected_schedule.pk == s.pk %}selected{% endif %}>
+          {{ s.get_day_display }} {{ s.start_time|time:"H:i" }}-{{ s.end_time|time:"H:i" }} — {{ s.subject.name }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    {% endif %}
+
+  </form>
+</div>
+
+{% if selected_schedule and students %}
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">👥 {{ students.count }} élève(s) — {{ selected_schedule.subject.name }}</div>
+      <div class="card-subtitle">{{ selected_schedule.classroom.name }} · {{ selected_schedule.get_day_display }} {{ selected_schedule.start_time|time:"H:i" }}–{{ selected_schedule.end_time|time:"H:i" }}{% if selected_schedule.room %} · {{ selected_schedule.room }}{% endif %}</div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button type="button" class="btn btn-success btn-sm" onclick="setAll('present')">✅ Tous présents</button>
+      <button type="button" class="btn btn-danger btn-sm" onclick="setAll('absent')">❌ Tous absents</button>
+    </div>
+  </div>
+
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="schedule" value="{{ selected_schedule.pk }}">
+    <div style="margin-bottom:16px;">
+      <label class="form-label">Date de la séance</label>
+      <input type="date" name="date" class="form-input" style="width:200px;" value="{% now 'Y-m-d' %}">
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      {% for student in students %}
+      <div style="display:flex;align-items:center;gap:14px;padding:12px 16px;background:var(--card2);border-radius:10px;border:1px solid var(--border);" id="row-{{ student.pk }}">
+        <div class="avatar" style="width:36px;height:36px;font-size:13px;flex-shrink:0;">
+          {% if student.avatar %}<img src="{{ student.avatar.url }}" alt="">{% else %}{{ student.first_name|first|upper }}{{ student.last_name|first|upper }}{% endif %}
+        </div>
+        <div style="flex:1;">
+          <div style="font-weight:600;">{{ student.get_full_name }}</div>
+          {% if student.student_profile %}<div style="font-size:11px;color:var(--text3);">{{ student.student_profile.student_id }}</div>{% endif %}
+        </div>
+        <div style="display:flex;gap:6px;" class="status-btns" data-pk="{{ student.pk }}">
+          <label style="cursor:pointer;">
+            <input type="radio" name="status_{{ student.pk }}" value="present" checked style="display:none;">
+            <span class="status-chip" data-status="present" data-pk="{{ student.pk }}" onclick="selectStatus({{ student.pk }},'present')" style="padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:2px solid var(--success);background:rgba(34,197,94,0.15);color:var(--success);">✅ Présent</span>
+          </label>
+          <label style="cursor:pointer;">
+            <input type="radio" name="status_{{ student.pk }}" value="absent" style="display:none;">
+            <span class="status-chip" data-status="absent" data-pk="{{ student.pk }}" onclick="selectStatus({{ student.pk }},'absent')" style="padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:2px solid transparent;background:var(--bg3);color:var(--text3);">❌ Absent</span>
+          </label>
+          <label style="cursor:pointer;">
+            <input type="radio" name="status_{{ student.pk }}" value="late" style="display:none;">
+            <span class="status-chip" data-status="late" data-pk="{{ student.pk }}" onclick="selectStatus({{ student.pk }},'late')" style="padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:2px solid transparent;background:var(--bg3);color:var(--text3);">⏰ Retard</span>
+          </label>
+          <label style="cursor:pointer;">
+            <input type="radio" name="status_{{ student.pk }}" value="excused" style="display:none;">
+            <span class="status-chip" data-status="excused" data-pk="{{ student.pk }}" onclick="selectStatus({{ student.pk }},'excused')" style="padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:2px solid transparent;background:var(--bg3);color:var(--text3);">📋 Excusé</span>
+          </label>
+        </div>
+        <input type="text" name="note_{{ student.pk }}" class="form-input" style="width:200px;font-size:12px;" placeholder="Note optionnelle…">
+      </div>
+      {% endfor %}
+    </div>
+
+    <div style="display:flex;gap:12px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border);justify-content:flex-end;">
+      <button type="submit" class="btn btn-primary">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        Enregistrer les présences
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+const statusColors = {
+  present: { border: 'var(--success)', bg: 'rgba(34,197,94,0.15)', color: 'var(--success)' },
+  absent:  { border: 'var(--danger)',  bg: 'rgba(239,68,68,0.15)',  color: 'var(--danger)' },
+  late:    { border: 'var(--warning)', bg: 'rgba(245,158,11,0.15)', color: 'var(--warning)' },
+  excused: { border: 'var(--accent)',  bg: 'rgba(79,156,249,0.15)', color: 'var(--accent)' },
+};
+
+function selectStatus(pk, status) {
+  const radio = document.querySelector(`input[name="status_${pk}"][value="${status}"]`);
+  if (radio) radio.checked = true;
+  document.querySelectorAll(`.status-chip[data-pk="${pk}"]`).forEach(chip => {
+    const s = chip.dataset.status;
+    const c = statusColors[s];
+    if (s === status) {
+      chip.style.borderColor = c.border;
+      chip.style.background  = c.bg;
+      chip.style.color       = c.color;
+    } else {
+      chip.style.borderColor = 'transparent';
+      chip.style.background  = 'var(--bg3)';
+      chip.style.color       = 'var(--text3)';
+    }
+  });
+  const row = document.getElementById('row-'+pk);
+  if (row) row.style.borderColor = statusColors[status].border;
+}
+
+function setAll(status) {
+  document.querySelectorAll('.status-chip').forEach(chip => {
+    if (chip.dataset.status === status) selectStatus(chip.dataset.pk, status);
+  });
+}
+</script>
+
+{% elif selected_schedule %}
+<div class="card"><div class="empty-state"><div class="icon">👥</div><h3>Aucun élève dans cette classe</h3></div></div>
+{% elif selected_classroom %}
+<div class="card"><div class="empty-state"><div class="icon">📅</div><h3>Sélectionnez un créneau</h3><p>Choisissez un créneau de cours pour {{ selected_classroom.name }}.</p></div></div>
+{% else %}
+<div class="card"><div class="empty-state"><div class="icon">📅</div><h3>Sélectionnez une classe</h3><p>Choisissez d'abord la classe, puis le créneau de cours pour saisir les présences.</p></div></div>
+{% endif %}
+{% endblock %}

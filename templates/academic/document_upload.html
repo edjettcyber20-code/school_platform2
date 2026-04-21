@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block title %}Ajouter un document{% endblock %}
+{% block page_title %}Ajouter un document{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div style="display:flex;align-items:center;gap:14px;">
+    <a href="{% url 'student_detail' student.pk %}" class="btn-icon">
+      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+    </a>
+    <div>
+      <h1 class="page-title">Ajouter un document</h1>
+      <p class="page-breadcrumb">{{ student.get_full_name }}</p>
+    </div>
+  </div>
+</div>
+<div class="card" style="max-width:560px;">
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="form-group">
+      <label class="form-label">Titre du document *</label>
+      <input type="text" name="title" class="form-input" required placeholder="Ex : Bulletin T1 2024-2025">
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Type de document</label>
+        <select name="doc_type" class="form-select">
+          <option value="report">Bulletin de notes</option>
+          <option value="certificate">Certificat de scolarité</option>
+          <option value="other">Autre document</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Année scolaire</label>
+        <input type="text" name="school_year" class="form-input" placeholder="2024-2025">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Fichier (PDF, image…)</label>
+      <input type="file" name="file" class="form-input" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notes</label>
+      <textarea name="notes" class="form-textarea" rows="2" placeholder="Remarques optionnelles…"></textarea>
+    </div>
+    <div style="display:flex;gap:12px;padding-top:16px;border-top:1px solid var(--border);">
+      <button type="submit" class="btn btn-primary">📎 Ajouter le document</button>
+      <a href="{% url 'student_detail' student.pk %}" class="btn btn-secondary">Annuler</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

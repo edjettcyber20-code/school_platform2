@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+{% block title %}Saisie des notes{% endblock %}
+{% block page_title %}Saisie des notes{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Saisie des notes</h1>
+    <p class="page-breadcrumb">{{ assignment.title }} · {{ assignment.classroom.name }} · {{ assignment.subject.name }}</p>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;">
+    <span class="badge badge-blue">{{ graded_count }}/{{ rows|length }} noté(s)</span>
+    <a href="{% url 'assignment_list' %}" class="btn btn-secondary btn-sm">← Retour</a>
+  </div>
+</div>
+
+<!-- Infos devoir -->
+<div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,rgba(79,156,249,0.06),rgba(123,94,167,0.04));">
+  <div style="display:flex;gap:20px;flex-wrap:wrap;">
+    <div><span class="form-label">Type</span><br><span class="badge badge-blue">{{ assignment.get_type_display }}</span></div>
+    <div><span class="form-label">Matière</span><br><strong>{{ assignment.subject.name }}</strong></div>
+    <div><span class="form-label">Classe</span><br><strong>{{ assignment.classroom.name }}</strong></div>
+    <div><span class="form-label">Note max</span><br><strong>{{ assignment.max_score }}</strong></div>
+    <div><span class="form-label">Échéance</span><br><strong>{{ assignment.due_date|date:"d/m/Y" }}</strong></div>
+    {% if assignment.description %}<div style="flex:1;min-width:200px;"><span class="form-label">Description</span><br>{{ assignment.description }}</div>{% endif %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">📝 Notes des {{ rows|length }} élève(s)</div>
+    <div style="display:flex;gap:8px;">
+      <button type="button" class="btn btn-secondary btn-sm" onclick="fillAll()">Remplir tout à 10</button>
+      <button type="button" class="btn btn-secondary btn-sm" onclick="clearAll()">Effacer tout</button>
+    </div>
+  </div>
+
+  <form method="post" id="grade-form">
+    {% csrf_token %}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:40px;">#</th>
+            <th>Élève</th>
+            <th style="width:130px;">Note <span style="color:var(--text3);font-weight:400;">(/ {{ assignment.max_score }})</span></th>
+            <th>Commentaire</th>
+            <th style="width:80px;">Statut</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+          <tr id="row-{{ row.student.pk }}">
+            <td style="color:var(--text3);">{{ forloop.counter }}</td>
+            <td>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div class="avatar" style="width:34px;height:34px;font-size:13px;">{{ row.student.first_name|first|upper }}{{ row.student.last_name|first|upper }}</div>
+                <div>
+                  <div style="font-weight:600;">{{ row.student.get_full_name }}</div>
+                  {% if row.student.student_profile %}<div style="font-size:11px;color:var(--text3);">{{ row.student.student_profile.student_id }}</div>{% endif %}
+                </div>
+              </div>
+            </td>
+            <td>
+              <div style="position:relative;display:flex;align-items:center;gap:8px;">
+                <input type="number" name="score_{{ row.student.pk }}" id="score_{{ row.student.pk }}"
+                  class="form-input score-input" style="width:90px;text-align:center;font-weight:700;font-size:15px;"
+                  min="0" max="{{ assignment.max_score }}" step="0.5"
+                  value="{% if row.grade %}{{ row.grade.score }}{% endif %}"
+                  oninput="updateRow({{ row.student.pk }}, this.value, {{ assignment.max_score }})"
+                  placeholder="—">
+                <span style="font-size:12px;color:var(--text3);">/{{ assignment.max_score }}</span>
+              </div>
+              <div id="bar-{{ row.student.pk }}" style="height:4px;background:var(--bg3);border-radius:2px;margin-top:5px;overflow:hidden;">
+                <div id="fill-{{ row.student.pk }}" style="height:100%;width:{% if row.grade %}{% widthratio row.grade.score assignment.max_score 100 %}{% else %}0{% endif %}%;background:var(--accent);border-radius:2px;transition:width 0.3s;"></div>
+              </div>
+            </td>
+            <td>
+              <input type="text" name="comment_{{ row.student.pk }}" class="form-input"
+                style="font-size:13px;" placeholder="Commentaire optionnel…"
+                value="{% if row.grade %}{{ row.grade.comment }}{% endif %}">
+            </td>
+            <td id="status-{{ row.student.pk }}">
+              {% if row.grade %}
+              <span class="badge badge-green">✓ Noté</span>
+              {% else %}
+              <span class="badge badge-gray">En attente</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div style="display:flex;gap:12px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border);justify-content:flex-end;">
+      <a href="{% url 'assignment_list' %}" class="btn btn-secondary">Annuler</a>
+      <button type="submit" class="btn btn-primary">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        Enregistrer toutes les notes
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+const maxScore = {{ assignment.max_score }};
+function updateRow(pk, val, max) {
+  const fill = document.getElementById('fill-'+pk);
+  const status = document.getElementById('status-'+pk);
+  const pct = val ? Math.min(100, (parseFloat(val)/parseFloat(max))*100) : 0;
+  const color = pct >= 70 ? 'var(--success)' : pct >= 50 ? 'var(--warning)' : 'var(--danger)';
+  if (fill) { fill.style.width = pct+'%'; fill.style.background = color; }
+  if (status && val) { status.innerHTML = '<span class="badge badge-blue">En cours</span>'; }
+}
+function fillAll() {
+  document.querySelectorAll('.score-input').forEach(inp => {
+    inp.value = 10;
+    updateRow(inp.name.replace('score_',''), 10, maxScore);
+  });
+}
+function clearAll() {
+  document.querySelectorAll('.score-input').forEach(inp => {
+    inp.value = '';
+    const pk = inp.name.replace('score_','');
+    const fill = document.getElementById('fill-'+pk);
+    if (fill) fill.style.width = '0%';
+  });
+}
+</script>
+{% endblock %}

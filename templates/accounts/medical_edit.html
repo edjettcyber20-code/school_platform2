@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% block title %}Infos médicales — {{ target_user.get_full_name }}{% endblock %}
+{% block page_title %}Santé{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{% if is_own %}Ma fiche médicale{% else %}Infos médicales — {{ target_user.get_full_name }}{% endif %}</h1>
+    {% if not is_own %}<p class="page-breadcrumb">{{ target_user.get_role_display }}</p>{% endif %}
+  </div>
+  {% if user.role in 'admin,teacher' and not is_own %}
+  <a href="{% url 'medical_list' %}" class="btn btn-secondary">← Retour à la liste</a>
+  {% endif %}
+</div>
+
+<form method="post">
+  {% csrf_token %}
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+
+    <!-- Colonne gauche -->
+    <div style="display:flex;flex-direction:column;gap:16px;">
+
+      <!-- Identité médicale -->
+      <div class="card">
+        <div class="card-title" style="margin-bottom:16px;">🩸 Informations générales</div>
+        <div class="form-group" style="margin-bottom:14px;">
+          <label class="form-label">Groupe sanguin</label>
+          <select name="blood_type" class="form-select">
+            {% for val, label in form.blood_type.field.choices %}
+            <option value="{{ val }}" {% if form.blood_type.value == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:14px;">
+          <label class="form-label">Allergies connues</label>
+          <textarea name="allergies" class="form-textarea" rows="2" placeholder="Pénicilline, arachides, pollen…">{{ form.allergies.value|default:'' }}</textarea>
+        </div>
+        <div class="form-group" style="margin-bottom:14px;">
+          <label class="form-label">Conditions médicales</label>
+          <textarea name="medical_conditions" class="form-textarea" rows="2" placeholder="Asthme, diabète, hypertension…">{{ form.medical_conditions.value|default:'' }}</textarea>
+        </div>
+        <div class="form-group" style="margin-bottom:14px;">
+          <label class="form-label">Maladies chroniques</label>
+          <textarea name="chronic_diseases" class="form-textarea" rows="2">{{ form.chronic_diseases.value|default:'' }}</textarea>
+        </div>
+        <div class="form-group" style="margin-bottom:14px;">
+          <label class="form-label">Médicaments en cours</label>
+          <textarea name="current_medications" class="form-textarea" rows="2" placeholder="Nom du médicament, posologie…">{{ form.current_medications.value|default:'' }}</textarea>
+        </div>
+        <div class="form-group" style="margin-bottom:14px;">
+          <label class="form-label">Vaccinations</label>
+          <textarea name="vaccination_status" class="form-textarea" rows="2" placeholder="Hépatite B, Tétanos (2022), Méningite…">{{ form.vaccination_status.value|default:'' }}</textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Dernier bilan médical</label>
+          <input type="date" name="last_checkup" value="{{ form.last_checkup.value|default:'' }}" class="form-input">
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Colonne droite -->
+    <div style="display:flex;flex-direction:column;gap:16px;">
+
+      <!-- Contact d'urgence -->
+      <div class="card">
+        <div class="card-title" style="margin-bottom:16px;">🚨 Contact d'urgence</div>
+        <div class="form-group" style="margin-bottom:14px;">
+          <label class="form-label">Nom du contact</label>
+          <input type="text" name="emergency_contact_name" value="{{ form.emergency_contact_name.value|default:'' }}" class="form-input" placeholder="Nom Prénom">
+        </div>
+        <div class="form-group" style="margin-bottom:14px;">
+          <label class="form-label">Téléphone d'urgence</label>
+          <input type="text" name="emergency_contact_phone" value="{{ form.emergency_contact_phone.value|default:'' }}" class="form-input" placeholder="+229 XX XX XX XX">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Lien de parenté</label>
+          <input type="text" name="emergency_contact_relation" value="{{ form.emergency_contact_relation.value|default:'' }}" class="form-input" placeholder="Père, Mère, Conjoint, Tuteur…">
+        </div>
+      </div>
+
+      <!-- Médecin traitant -->
+      <div class="card">
+        <div class="card-title" style="margin-bottom:16px;">👨‍⚕️ Médecin traitant</div>
+        <div class="form-group" style="margin-bottom:14px;">
+          <label class="form-label">Nom du médecin</label>
+          <input type="text" name="doctor_name" value="{{ form.doctor_name.value|default:'' }}" class="form-input" placeholder="Dr. Nom Prénom">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Téléphone du médecin</label>
+          <input type="text" name="doctor_phone" value="{{ form.doctor_phone.value|default:'' }}" class="form-input" placeholder="+229 XX XX XX XX">
+        </div>
+      </div>
+
+      <!-- Assurance & Notes -->
+      <div class="card">
+        <div class="card-title" style="margin-bottom:16px;">📋 Assurance & Observations</div>
+        <div class="form-group" style="margin-bottom:14px;">
+          <label class="form-label">N° assurance santé</label>
+          <input type="text" name="insurance_number" value="{{ form.insurance_number.value|default:'' }}" class="form-input" placeholder="Numéro de police">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Observations libres</label>
+          <textarea name="notes" class="form-textarea" rows="3" placeholder="Toute information utile pour le personnel médical…">{{ form.notes.value|default:'' }}</textarea>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div style="display:flex;gap:12px;margin-top:8px;padding-top:16px;border-top:1px solid var(--border);">
+    <button type="submit" class="btn btn-primary">
+      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+      Sauvegarder
+    </button>
+    {% if user.role in 'admin,teacher' and not is_own %}
+    <a href="{% url 'medical_list' %}" class="btn btn-secondary">Annuler</a>
+    <a href="{% url 'insurance_user' target_user.pk %}" class="btn btn-secondary" style="margin-left:auto;">
+      🛡️ Voir les assurances
+    </a>
+    {% endif %}
+  </div>
+</form>
+{% endblock %}

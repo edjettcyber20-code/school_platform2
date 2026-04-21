@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}Supprimer le niveau{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Supprimer un niveau</h1>
+  <a href="{% url 'level_list' %}" class="btn btn-secondary">← Retour</a>
+</div>
+<div class="card" style="max-width:480px;">
+  <div style="text-align:center;padding:8px 0 20px;">
+    <div style="font-size:48px;margin-bottom:16px;">⚠️</div>
+    <h3 style="margin-bottom:8px;">Supprimer « {{ level.name }} » ?</h3>
+    <p style="color:var(--text3);font-size:14px;margin-bottom:20px;">
+      Cette action est irréversible. Les classes associées à ce niveau seront aussi affectées.
+    </p>
+    <div style="display:flex;gap:12px;justify-content:center;">
+      <form method="post" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">🗑️ Confirmer la suppression</button>
+      </form>
+      <a href="{% url 'level_list' %}" class="btn btn-secondary">Annuler</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

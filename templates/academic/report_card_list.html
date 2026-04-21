@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+{% block title %}Bulletins{% endblock %}
+{% block page_title %}Bulletins de notes{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Bulletins de notes</h1>
+    <p class="page-breadcrumb">{{ rcs.count }} bulletin(s)</p>
+  </div>
+  {% if user.role == 'admin' %}
+  <div style="display:flex;gap:8px;">
+    <a href="{% url 'trimester_list' %}" class="btn btn-secondary">Trimestres</a>
+    <form method="post" action="{% url 'generate_all_reports' %}" style="display:flex;gap:8px;">
+      {% csrf_token %}
+      <select name="classroom" class="form-select" style="width:160px;">
+        <option value="">Classe…</option>
+        {% for cls in classrooms %}<option value="{{ cls.pk }}">{{ cls.name }}</option>{% endfor %}
+      </select>
+      <select name="trimester" class="form-select" style="width:160px;">
+        <option value="">Trimestre…</option>
+        {% for t in trimesters %}<option value="{{ t.pk }}">{{ t }}</option>{% endfor %}
+      </select>
+      <button type="submit" class="btn btn-primary">⚡ Générer tout</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+
+{% if user.role == 'admin' %}
+<div class="card" style="margin-bottom:16px;">
+  <form method="get" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+    <div style="flex:1;min-width:160px;">
+      <label class="form-label">Classe</label>
+      <select name="classroom" class="form-select">
+        <option value="">Toutes</option>
+        {% for cls in classrooms %}<option value="{{ cls.pk }}">{{ cls.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div style="flex:1;min-width:160px;">
+      <label class="form-label">Trimestre</label>
+      <select name="trimester" class="form-select">
+        <option value="">Tous</option>
+        {% for t in trimesters %}<option value="{{ t.pk }}">{{ t }}</option>{% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn btn-secondary">Filtrer</button>
+  </form>
+</div>
+{% endif %}
+
+{% if rcs %}
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          {% if user.role != 'student' %}<th>Élève</th>{% endif %}
+          <th>Classe</th>
+          <th>Trimestre</th>
+          <th style="text-align:center;">Moyenne</th>
+          <th style="text-align:center;">Rang</th>
+          <th style="text-align:center;">Absences</th>
+          <th>Statut</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for rc in rcs %}
+        <tr>
+          {% if user.role != 'student' %}
+          <td>
+            <a href="{% url 'student_detail' rc.student.pk %}" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit;">
+              <div class="avatar" style="width:32px;height:32px;font-size:12px;">{{ rc.student.first_name|first|upper }}{{ rc.student.last_name|first|upper }}</div>
+              <span style="font-weight:600;">{{ rc.student.get_full_name }}</span>
+            </a>
+          </td>
+          {% endif %}
+          <td>{{ rc.classroom.name }}</td>
+          <td>{{ rc.trimester }}</td>
+          <td style="text-align:center;">
+            {% if rc.general_average %}
+            <span style="font-weight:800;color:{% if rc.general_average >= 14 %}var(--success){% elif rc.general_average >= 10 %}var(--warning){% else %}var(--danger){% endif %};">{{ rc.general_average|floatformat:2 }}/20</span>
+            {% else %}<span style="color:var(--text3);">—</span>{% endif %}
+          </td>
+          <td style="text-align:center;">
+            {% if rc.rank %}<span class="badge {% if rc.rank == 1 %}badge-yellow{% elif rc.rank <= 3 %}badge-blue{% else %}badge-gray{% endif %}">{{ rc.rank }}/{{ rc.class_size }}</span>
+            {% else %}<span style="color:var(--text3);">—</span>{% endif %}
+          </td>
+          <td style="text-align:center;"><span class="badge {% if rc.absences_total == 0 %}badge-green{% else %}badge-red{% endif %}">{{ rc.absences_total }}</span></td>
+          <td><span class="badge {% if rc.status == 'published' %}badge-green{% elif rc.status == 'draft' %}badge-gray{% else %}badge-blue{% endif %}">{{ rc.get_status_display }}</span></td>
+          <td>
+            <div style="display:flex;gap:4px;flex-wrap:wrap;">
+              <a href="{% url 'report_card_detail' rc.pk %}" class="btn btn-secondary btn-xs">Voir</a>
+              {% if user.role in 'admin,teacher' %}<a href="{% url 'report_card_edit' rc.pk %}" class="btn btn-secondary btn-xs">✏️</a>{% endif %}
+              <a href="{% url 'report_card_pdf' rc.pk %}" class="btn btn-primary btn-xs">📥 PDF</a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card">
+  <div class="empty-state">
+    <div class="icon">📋</div>
+    <h3>Aucun bulletin disponible</h3>
+    <p>{% if user.role == 'admin' %}Générez les bulletins après avoir saisi les notes et calculé les moyennes.{% else %}Les bulletins apparaîtront ici une fois publiés.{% endif %}</p>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,293 @@
+{% extends 'base.html' %}
+{% block title %}Tableau de bord{% endblock %}
+{% block page_title %}Tableau de bord{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Bonjour, {{ user.first_name }} 👋</h1>
+    <p class="page-breadcrumb">{{ user.get_role_display }} · {% now "l d F Y" %}</p>
+  </div>
+  {% if user.role == 'admin' %}
+  <a href="{% url 'user_create' %}" class="btn btn-primary">
+    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+    Ajouter un utilisateur
+  </a>
+  {% elif user.role == 'teacher' %}
+  <a href="{% url 'assignment_create' %}" class="btn btn-primary">
+    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+    Nouveau devoir
+  </a>
+  {% endif %}
+</div>
+
+{% if user.role == 'admin' %}
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:24px;">
+  <a href="{% url 'student_list' %}" style="text-decoration:none;">
+    <div style="padding:14px;background:var(--card);border:1px solid var(--border);border-radius:12px;text-align:center;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+      <div style="font-size:24px;margin-bottom:6px;">👤</div><div style="font-size:12px;font-weight:600;">Fiches élèves</div>
+    </div>
+  </a>
+  <a href="{% url 'grade_matrix' %}" style="text-decoration:none;">
+    <div style="padding:14px;background:var(--card);border:1px solid var(--border);border-radius:12px;text-align:center;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+      <div style="font-size:24px;margin-bottom:6px;">📊</div><div style="font-size:12px;font-weight:600;">Tableau notes</div>
+    </div>
+  </a>
+  <a href="{% url 'class_ranking' %}" style="text-decoration:none;">
+    <div style="padding:14px;background:var(--card);border:1px solid var(--border);border-radius:12px;text-align:center;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+      <div style="font-size:24px;margin-bottom:6px;">🏆</div><div style="font-size:12px;font-weight:600;">Classement</div>
+    </div>
+  </a>
+  <a href="{% url 'report_card_list' %}" style="text-decoration:none;">
+    <div style="padding:14px;background:var(--card);border:1px solid var(--border);border-radius:12px;text-align:center;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+      <div style="font-size:24px;margin-bottom:6px;">📋</div><div style="font-size:12px;font-weight:600;">Bulletins PDF</div>
+    </div>
+  </a>
+  <a href="{% url 'bulk_attendance' %}" style="text-decoration:none;">
+    <div style="padding:14px;background:var(--card);border:1px solid var(--border);border-radius:12px;text-align:center;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+      <div style="font-size:24px;margin-bottom:6px;">📅</div><div style="font-size:12px;font-weight:600;">Appel</div>
+    </div>
+  </a>
+  <a href="{% url 'trimester_list' %}" style="text-decoration:none;">
+    <div style="padding:14px;background:var(--card);border:1px solid var(--border);border-radius:12px;text-align:center;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+      <div style="font-size:24px;margin-bottom:6px;">🗓️</div><div style="font-size:12px;font-weight:600;">Trimestres</div>
+    </div>
+  </a>
+</div>
+
+  <div class="stat-card blue">
+    <div class="stat-icon blue">👥</div>
+    <div class="stat-value">{{ total_students }}</div>
+    <div class="stat-label">Élèves inscrits</div>
+  </div>
+  <div class="stat-card purple">
+    <div class="stat-icon purple">🎓</div>
+    <div class="stat-value">{{ total_teachers }}</div>
+    <div class="stat-label">Enseignants</div>
+  </div>
+  <div class="stat-card green">
+    <div class="stat-icon green">🏫</div>
+    <div class="stat-value">{{ total_classes }}</div>
+    <div class="stat-label">Classes actives</div>
+  </div>
+  <div class="stat-card orange">
+    <div class="stat-icon orange">👨‍👩‍👧</div>
+    <div class="stat-value">{{ total_parents }}</div>
+    <div class="stat-label">Parents</div>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">📢 Annonces récentes</div>
+        <div class="card-subtitle">Dernières communications</div>
+      </div>
+      <a href="{% url 'announcement_create' %}" class="btn btn-secondary btn-sm">+ Créer</a>
+    </div>
+    {% for ann in recent_announcements %}
+    <div class="announcement-item {% if ann.is_pinned %}pinned{% endif %}">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+        <strong style="font-size:13.5px;">{% if ann.is_pinned %}📌 {% endif %}{{ ann.title }}</strong>
+        <span class="badge badge-gray">{{ ann.get_target_role_display }}</span>
+      </div>
+      <p style="font-size:12px;color:var(--text3);">{{ ann.created_at|date:"d/m/Y" }} · {{ ann.author.get_full_name }}</p>
+    </div>
+    {% empty %}
+    <div class="empty-state"><p>Aucune annonce pour le moment</p></div>
+    {% endfor %}
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">👤 Nouveaux utilisateurs</div>
+        <div class="card-subtitle">Récemment ajoutés</div>
+      </div>
+      <a href="{% url 'user_list' %}" class="btn btn-secondary btn-sm">Voir tout</a>
+    </div>
+    {% for u in recent_users %}
+    <div class="user-card" style="margin-bottom:8px;">
+      <div class="avatar">
+        {% if u.avatar %}<img src="{{ u.avatar.url }}" alt="">{% else %}{{ u.first_name|first|upper }}{{ u.last_name|first|upper }}{% endif %}
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ u.get_full_name }}</div>
+        <div style="font-size:12px;color:var(--text3);">{{ u.email }}</div>
+      </div>
+      <span class="role-badge role-{{ u.role }}">{{ u.get_role_display }}</span>
+    </div>
+    {% empty %}
+    <div class="empty-state"><p>Aucun utilisateur</p></div>
+    {% endfor %}
+  </div>
+</div>
+
+{% elif user.role == 'teacher' %}
+<div class="stats-grid">
+  <div class="stat-card blue">
+    <div class="stat-icon blue">🏫</div>
+    <div class="stat-value">{{ my_classes.count }}</div>
+    <div class="stat-label">Mes classes</div>
+  </div>
+  <div class="stat-card green">
+    <div class="stat-icon green">👥</div>
+    <div class="stat-value">{{ total_students }}</div>
+    <div class="stat-label">Mes élèves</div>
+  </div>
+  <div class="stat-card purple">
+    <div class="stat-icon purple">📝</div>
+    <div class="stat-value">{{ my_assignments.count }}</div>
+    <div class="stat-label">Devoirs créés</div>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">🏫 Mes classes</div>
+      <a href="{% url 'classroom_list' %}" class="btn btn-secondary btn-sm">Voir tout</a>
+    </div>
+    <div class="grid-auto">
+      {% for cls in my_classes %}
+      <a href="{% url 'classroom_detail' cls.pk %}" class="class-card">
+        <div class="class-card-top">
+          <div class="class-icon">🏫</div>
+          <span class="badge badge-blue">{{ cls.school_year }}</span>
+        </div>
+        <div class="class-name">{{ cls.name }}</div>
+        <div class="class-meta">{{ cls.level.name }}</div>
+        <div class="class-stats">
+          <div class="class-stat"><strong>{{ cls.student_count }}</strong>Élèves</div>
+          <div class="class-stat"><strong>{{ cls.subjects.count }}</strong>Matières</div>
+        </div>
+      </a>
+      {% empty %}
+      <div class="empty-state"><p>Aucune classe assignée</p></div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">📝 Devoirs récents</div>
+      <a href="{% url 'assignment_create' %}" class="btn btn-secondary btn-sm">+ Créer</a>
+    </div>
+    {% for a in my_assignments %}
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">
+      <div style="width:36px;height:36px;border-radius:8px;background:rgba(79,156,249,0.1);display:flex;align-items:center;justify-content:center;font-size:16px;">
+        {% if a.type == 'exam' %}📋{% elif a.type == 'quiz' %}❓{% elif a.type == 'project' %}🗂️{% else %}📄{% endif %}
+      </div>
+      <div style="flex:1;">
+        <div style="font-weight:600;font-size:13.5px;">{{ a.title }}</div>
+        <div style="font-size:12px;color:var(--text3);">{{ a.classroom.name }} · {{ a.due_date|date:"d/m/Y" }}</div>
+      </div>
+      <span class="badge badge-blue">{{ a.max_score }}/20</span>
+    </div>
+    {% empty %}
+    <div class="empty-state"><p>Aucun devoir créé</p></div>
+    {% endfor %}
+  </div>
+</div>
+
+{% elif user.role == 'student' %}
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">📚 Mes classes</div>
+    </div>
+    {% for enr in enrollments %}
+    <a href="{% url 'classroom_detail' enr.classroom.pk %}" class="class-card" style="margin-bottom:10px;">
+      <div class="class-card-top">
+        <div class="class-icon">📚</div>
+        <span class="badge badge-green">Actif</span>
+      </div>
+      <div class="class-name">{{ enr.classroom.name }}</div>
+      <div class="class-meta">{{ enr.classroom.level.name }} · {{ enr.classroom.school_year }}</div>
+      <div class="class-stats">
+        <div class="class-stat"><strong>{{ enr.classroom.student_count }}</strong>Élèves</div>
+        <div class="class-stat"><strong>{{ enr.classroom.subjects.count }}</strong>Matières</div>
+      </div>
+    </a>
+    {% empty %}
+    <div class="empty-state"><p>Aucune inscription active</p></div>
+    {% endfor %}
+  </div>
+
+  <div>
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header">
+        <div class="card-title">⭐ Mes dernières notes</div>
+        <a href="{% url 'grade_list' %}" class="btn btn-secondary btn-sm">Tout voir</a>
+      </div>
+      {% for g in my_grades %}
+      <div style="padding:10px 0;border-bottom:1px solid var(--border);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+          <span style="font-size:13px;font-weight:600;">{{ g.assignment.title }}</span>
+          <span style="font-weight:700;color:{% if g.score >= 14 %}var(--success){% elif g.score >= 10 %}var(--warning){% else %}var(--danger){% endif %};">{{ g.score }}/{{ g.assignment.max_score }}</span>
+        </div>
+        <div class="grade-bar">
+          <div class="grade-fill" style="width:{% widthratio g.score g.assignment.max_score 100 %}%;background:{% if g.score >= 14 %}var(--success){% elif g.score >= 10 %}var(--warning){% else %}var(--danger){% endif %};"></div>
+        </div>
+      </div>
+      {% empty %}
+      <div class="empty-state"><p>Aucune note disponible</p></div>
+      {% endfor %}
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">📅 Prochains devoirs</div>
+      </div>
+      {% for a in upcoming_assignments %}
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);">
+        <div style="width:32px;height:32px;border-radius:8px;background:rgba(249,115,22,0.1);display:flex;align-items:center;justify-content:center;font-size:14px;">📄</div>
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:600;">{{ a.title }}</div>
+          <div style="font-size:11px;color:var(--text3);">{{ a.subject.name }} · échéance {{ a.due_date|date:"d/m/Y" }}</div>
+        </div>
+      </div>
+      {% empty %}
+      <div class="empty-state"><p>Aucun devoir à venir</p></div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+{% elif user.role == 'parent' %}
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">👨‍👩‍👧 Mes enfants</div>
+  </div>
+  <div class="grid-auto">
+    {% for child in children %}
+    <div class="user-card">
+      <div class="avatar avatar-lg">{{ child.first_name|first|upper }}{{ child.last_name|first|upper }}</div>
+      <div>
+        <div style="font-weight:700;font-size:15px;">{{ child.get_full_name }}</div>
+        <div style="font-size:12px;color:var(--text3);">
+          {% with child.enrollments.filter.first as enr %}Élève{% endwith %}
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="empty-state"><p>Aucun enfant lié à votre compte</p></div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px;">
+  <div class="card-header"><div class="card-title">📢 Annonces</div></div>
+  {% for ann in announcements %}
+  <div class="announcement-item">
+    <strong>{{ ann.title }}</strong>
+    <p style="font-size:12px;color:var(--text3);margin-top:4px;">{{ ann.content|truncatewords:20 }}</p>
+    <p style="font-size:11px;color:var(--text3);margin-top:4px;">{{ ann.created_at|date:"d/m/Y" }}</p>
+  </div>
+  {% empty %}
+  <div class="empty-state"><p>Aucune annonce</p></div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

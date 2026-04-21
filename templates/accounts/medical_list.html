@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% block title %}Infos Médicales{% endblock %}
+{% block page_title %}Santé{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Informations médicales</h1>
+    <p class="page-breadcrumb">{{ total_with_info }} fiche(s) renseignée(s) sur {{ total_users }} personne(s)</p>
+  </div>
+</div>
+
+<!-- Filtres -->
+<div class="card" style="margin-bottom:16px;">
+  <form method="get" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+    <div style="flex:2;min-width:200px;">
+      <label class="form-label">Recherche</label>
+      <input type="text" name="q" value="{{ search }}" class="form-input" placeholder="Nom, prénom…">
+    </div>
+    <div style="flex:1;min-width:160px;">
+      <label class="form-label">Rôle</label>
+      <select name="role" class="form-select">
+        <option value="">Tous les rôles</option>
+        <option value="student"  {% if role_filter == 'student'  %}selected{% endif %}>Élèves</option>
+        <option value="teacher"  {% if role_filter == 'teacher'  %}selected{% endif %}>Enseignants</option>
+        <option value="admin"    {% if role_filter == 'admin'    %}selected{% endif %}>Administrateurs</option>
+      </select>
+    </div>
+    <div>
+      <button type="submit" class="btn btn-primary">Filtrer</button>
+      <a href="{% url 'medical_list' %}" class="btn btn-secondary">Réinitialiser</a>
+    </div>
+  </form>
+</div>
+
+{% if users %}
+<div class="card">
+  <table style="width:100%;border-collapse:collapse;">
+    <thead>
+      <tr style="border-bottom:2px solid var(--border);">
+        <th style="padding:10px 12px;text-align:left;font-size:12px;color:var(--text3);text-transform:uppercase;">Personne</th>
+        <th style="padding:10px 12px;text-align:left;font-size:12px;color:var(--text3);text-transform:uppercase;">Groupe sanguin</th>
+        <th style="padding:10px 12px;text-align:left;font-size:12px;color:var(--text3);text-transform:uppercase;">Contact urgence</th>
+        <th style="padding:10px 12px;text-align:left;font-size:12px;color:var(--text3);text-transform:uppercase;">Médecin</th>
+        <th style="padding:10px 12px;text-align:left;font-size:12px;color:var(--text3);text-transform:uppercase;">Statut</th>
+        <th style="padding:10px 12px;text-align:center;font-size:12px;color:var(--text3);text-transform:uppercase;">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in users %}
+      <tr style="border-bottom:1px solid var(--border);transition:background .15s;" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
+        <td style="padding:12px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="avatar" style="width:36px;height:36px;font-size:13px;flex-shrink:0;">
+              {% if u.avatar %}<img src="{{ u.avatar.url }}" alt="">
+              {% else %}{{ u.first_name|first|upper }}{{ u.last_name|first|upper }}{% endif %}
+            </div>
+            <div>
+              <div style="font-weight:600;font-size:14px;">{{ u.get_full_name }}</div>
+              <span class="badge {% if u.role == 'student' %}badge-blue{% elif u.role == 'teacher' %}badge-green{% else %}badge-purple{% endif %}" style="font-size:10px;">{{ u.get_role_display }}</span>
+            </div>
+          </div>
+        </td>
+        <td style="padding:12px;">
+          {% if u.medical_info and u.medical_info.blood_type %}
+            <span style="padding:4px 10px;border-radius:20px;background:rgba(239,68,68,0.1);color:#dc2626;font-weight:700;font-size:13px;border:1px solid rgba(239,68,68,0.2);">{{ u.medical_info.blood_type }}</span>
+          {% else %}
+            <span style="color:var(--text3);font-size:12px;">—</span>
+          {% endif %}
+        </td>
+        <td style="padding:12px;font-size:13px;">
+          {% if u.medical_info and u.medical_info.emergency_contact_name %}
+            <div style="font-weight:500;">{{ u.medical_info.emergency_contact_name }}</div>
+            <div style="color:var(--text3);font-size:11px;">{{ u.medical_info.emergency_contact_phone }}</div>
+          {% else %}<span style="color:var(--text3);">—</span>{% endif %}
+        </td>
+        <td style="padding:12px;font-size:13px;">
+          {% if u.medical_info and u.medical_info.doctor_name %}
+            {{ u.medical_info.doctor_name }}
+          {% else %}<span style="color:var(--text3);">—</span>{% endif %}
+        </td>
+        <td style="padding:12px;">
+          {% if u.medical_info %}
+            <span class="badge badge-green" style="font-size:11px;">✅ Renseignée</span>
+          {% else %}
+            <span class="badge badge-yellow" style="font-size:11px;">⚠️ Vide</span>
+          {% endif %}
+        </td>
+        <td style="padding:12px;text-align:center;">
+          <a href="{% url 'medical_edit_for' u.pk %}" class="btn btn-secondary btn-sm">
+            {% if u.medical_info %}✏️ Modifier{% else %}➕ Remplir{% endif %}
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card"><div class="empty-state"><div class="icon">🏥</div><h3>Aucun résultat</h3></div></div>
+{% endif %}
+{% endblock %}

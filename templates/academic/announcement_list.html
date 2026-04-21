@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}Annonces{% endblock %}
+{% block page_title %}Annonces{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Annonces & Communications</h1>
+    <p class="page-breadcrumb">{{ announcements.count }} annonce(s)</p>
+  </div>
+  {% if user.role == 'admin' %}
+  <a href="{% url 'announcement_create' %}" class="btn btn-primary">
+    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+    Nouvelle annonce
+  </a>
+  {% endif %}
+</div>
+
+{% if announcements %}
+<div style="display:flex;flex-direction:column;gap:14px;">
+  {% for ann in announcements %}
+  <div class="card {% if ann.is_pinned %}pinned{% endif %}" style="{% if ann.is_pinned %}border-left:4px solid var(--accent);{% endif %}">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+      <div style="flex:1;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;">
+          {% if ann.is_pinned %}<span style="font-size:16px;">📌</span>{% endif %}
+          <h3 style="font-size:16px;font-weight:700;">{{ ann.title }}</h3>
+          <span class="badge {% if ann.target_role == 'all' %}badge-blue{% elif ann.target_role == 'teacher' %}badge-purple{% elif ann.target_role == 'student' %}badge-green{% else %}badge-yellow{% endif %}">
+            {{ ann.get_target_role_display }}
+          </span>
+        </div>
+        <p style="color:var(--text2);font-size:14px;line-height:1.6;margin-bottom:12px;">{{ ann.content }}</p>
+        <div style="display:flex;align-items:center;gap:16px;font-size:12px;color:var(--text3);">
+          <span>✍️ {{ ann.author.get_full_name }}</span>
+          <span>📅 {{ ann.created_at|date:"d F Y à H:i" }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card"><div class="empty-state"><div class="icon">📢</div><h3>Aucune annonce</h3><p>Les communications apparaîtront ici.</p></div></div>
+{% endif %}
+{% endblock %}

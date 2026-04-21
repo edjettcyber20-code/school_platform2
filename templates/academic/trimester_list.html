@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}Trimestres{% endblock %}
+{% block page_title %}Trimestres{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Trimestres</h1>
+  <a href="{% url 'trimester_create' %}" class="btn btn-primary">+ Créer un trimestre</a>
+</div>
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Trimestre</th><th>Année scolaire</th><th>Début</th><th>Fin</th><th>Statut</th></tr></thead>
+      <tbody>
+        {% for t in trimesters %}
+        <tr>
+          <td style="font-weight:600;">{{ t.get_number_display }}</td>
+          <td>{{ t.school_year }}</td>
+          <td>{{ t.start_date|date:"d/m/Y" }}</td>
+          <td>{{ t.end_date|date:"d/m/Y" }}</td>
+          <td><span class="badge {% if t.is_active %}badge-green{% else %}badge-gray{% endif %}">{% if t.is_active %}Actif{% else %}Inactif{% endif %}</span></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5"><div class="empty-state"><p>Aucun trimestre créé</p></div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block title %}Présences{% endblock %}
+{% block page_title %}Présences & Absences{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Présences & Absences</h1>
+    {% if user.role == 'student' and total %}
+    <p class="page-breadcrumb">{{ absences }} absence(s) sur {{ total }} séance(s)</p>
+    {% endif %}
+  </div>
+  {% if user.role in 'admin,teacher' %}
+  <a href="{% url 'attendance_create' %}" class="btn btn-primary">
+    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+    Enregistrer présence
+  </a>
+  {% endif %}
+</div>
+
+{% if user.role == 'student' %}
+  {% if total %}
+  <div class="stats-grid" style="margin-bottom:20px;">
+    <div class="stat-card green">
+      <div class="stat-icon green">✅</div>
+      <div class="stat-value">{{ total|add:absences|add:"-"|add:absences }}</div>
+      <div class="stat-label">Présences</div>
+    </div>
+    <div class="stat-card orange">
+      <div class="stat-icon orange">⚠️</div>
+      <div class="stat-value">{{ absences }}</div>
+      <div class="stat-label">Absences</div>
+    </div>
+    <div class="stat-card blue">
+      <div class="stat-icon blue">📊</div>
+      <div class="stat-value">{{ total }}</div>
+      <div class="stat-label">Total séances</div>
+    </div>
+  </div>
+  {% endif %}
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Date</th><th>Matière</th><th>Statut</th><th>Note</th></tr></thead>
+        <tbody>
+          {% for att in attendances %}
+          <tr>
+            <td>{{ att.date|date:"d/m/Y" }}</td>
+            <td>{{ att.schedule.subject.name }}</td>
+            <td>
+              <span class="badge {% if att.status == 'present' %}badge-green{% elif att.status == 'absent' %}badge-red{% elif att.status == 'late' %}badge-yellow{% else %}badge-blue{% endif %}">
+                {{ att.get_status_display }}
+              </span>
+            </td>
+            <td style="color:var(--text3);font-size:12px;">{{ att.note|default:"-" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4"><div class="empty-state"><p>Aucune donnée de présence</p></div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+{% else %}
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Élève</th><th>Date</th><th>Matière</th><th>Statut</th><th>Note</th></tr></thead>
+        <tbody>
+          {% for att in attendances %}
+          <tr>
+            <td>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div class="avatar" style="width:32px;height:32px;font-size:12px;">{{ att.student.first_name|first|upper }}{{ att.student.last_name|first|upper }}</div>
+                {{ att.student.get_full_name }}
+              </div>
+            </td>
+            <td>{{ att.date|date:"d/m/Y" }}</td>
+            <td>{{ att.schedule.subject.name }}</td>
+            <td>
+              <span class="badge {% if att.status == 'present' %}badge-green{% elif att.status == 'absent' %}badge-red{% elif att.status == 'late' %}badge-yellow{% else %}badge-blue{% endif %}">
+                {{ att.get_status_display }}
+              </span>
+            </td>
+            <td style="color:var(--text3);font-size:12px;">{{ att.note|default:"-" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5"><div class="empty-state"><p>Aucune donnée de présence</p></div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

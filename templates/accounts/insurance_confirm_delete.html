@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}Supprimer l'assurance{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Supprimer une assurance</h1>
+  <a href="{% url 'insurance_list' %}" class="btn btn-secondary">← Retour</a>
+</div>
+<div class="card" style="max-width:500px;">
+  <div style="text-align:center;padding:8px 0 20px;">
+    <div style="font-size:48px;margin-bottom:16px;">⚠️</div>
+    <h3 style="margin-bottom:8px;">Confirmer la suppression</h3>
+    <div style="background:var(--bg2);border-radius:10px;padding:14px;margin:16px 0;text-align:left;">
+      <p style="font-size:13px;margin-bottom:6px;"><strong>Assuré :</strong> {{ insurance.user.get_full_name }}</p>
+      <p style="font-size:13px;margin-bottom:6px;"><strong>Type :</strong> {{ insurance.get_insurance_type_display }}</p>
+      <p style="font-size:13px;margin-bottom:6px;"><strong>Compagnie :</strong> {{ insurance.company }}</p>
+      <p style="font-size:13px;margin-bottom:0;"><strong>N° police :</strong> {{ insurance.policy_number }}</p>
+    </div>
+    <p style="color:var(--danger);font-size:13px;margin-bottom:24px;">Cette action est irréversible.</p>
+    <div style="display:flex;gap:12px;justify-content:center;">
+      <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">🗑️ Supprimer définitivement</button>
+      </form>
+      <a href="{% url 'insurance_list' %}" class="btn btn-secondary">Annuler</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

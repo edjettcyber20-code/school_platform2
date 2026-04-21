@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block title %}Élèves{% endblock %}
+{% block page_title %}Gestion des élèves{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Fiches élèves</h1>
+    <p class="page-breadcrumb">{{ students.count }} élève(s)</p>
+  </div>
+  {% if user.role == 'admin' %}
+  <a href="{% url 'user_create' %}" class="btn btn-primary">
+    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+    Nouvel élève
+  </a>
+  {% endif %}
+</div>
+
+<div class="card" style="margin-bottom:16px;">
+  <form method="get" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+    <div style="flex:1;min-width:200px;">
+      <label class="form-label">Recherche</label>
+      <input type="text" name="q" class="form-input" placeholder="Nom, prénom, matricule…" value="{{ search }}">
+    </div>
+    <div style="width:220px;">
+      <label class="form-label">Classe</label>
+      <select name="classroom" class="form-select">
+        <option value="">Toutes les classes</option>
+        {% for cls in classrooms %}
+        <option value="{{ cls.pk }}" {% if selected_classroom == cls.pk|stringformat:'s' %}selected{% endif %}>{{ cls.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Filtrer</button>
+    <a href="{% url 'student_list' %}" class="btn btn-secondary">Réinitialiser</a>
+  </form>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;">
+  {% for student in students %}
+  <a href="{% url 'student_detail' student.pk %}" style="text-decoration:none;color:inherit;">
+    <div class="card" style="transition:all 0.2s;cursor:pointer;" onmouseover="this.style.borderColor='var(--accent)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='';this.style.transform=''">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
+        <div class="avatar avatar-lg" style="border-radius:14px;background:linear-gradient(135deg,{% cycle '#4f9cf9' '#7b5ea7' '#38d4a4' '#f97316' '#ef4444' %},{% cycle '#3b82f6' '#6d28d9' '#059669' '#ea580c' '#dc2626' %});">
+          {% if student.avatar %}<img src="{{ student.avatar.url }}" alt="">{% else %}{{ student.first_name|first|upper }}{{ student.last_name|first|upper }}{% endif %}
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ student.get_full_name }}</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:2px;">
+            {% if student.student_profile %}{{ student.student_profile.student_id }}{% endif %}
+          </div>
+          <span class="badge badge-green" style="margin-top:4px;">Élève actif</span>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:12px;border-top:1px solid var(--border);">
+        <div style="font-size:12px;color:var(--text3);">
+          <div style="font-weight:600;color:var(--text2);margin-bottom:2px;">Classe</div>
+          {% with student.enrollments.all|first as enr %}
+          {{ enr.classroom.name|default:"—" }}
+          {% endwith %}
+        </div>
+        <div style="font-size:12px;color:var(--text3);">
+          <div style="font-weight:600;color:var(--text2);margin-bottom:2px;">Email</div>
+          <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;">{{ student.email }}</span>
+        </div>
+      </div>
+    </div>
+  </a>
+  {% empty %}
+  <div class="card" style="grid-column:1/-1;">
+    <div class="empty-state"><div class="icon">👤</div><h3>Aucun élève trouvé</h3><p>Modifiez vos critères de recherche.</p></div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

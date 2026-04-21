@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">{{ title }}</h1>
+  <a href="{% url 'level_list' %}" class="btn btn-secondary">← Retour aux niveaux</a>
+</div>
+<div class="card" style="max-width:480px;">
+  <form method="post">
+    {% csrf_token %}
+    <div style="display:flex;flex-direction:column;gap:18px;">
+      <div class="form-group">
+        <label class="form-label">Nom du niveau <span style="color:var(--danger)">*</span></label>
+        <input type="text" name="name" value="{{ form.name.value|default:'' }}"
+               class="form-input" placeholder="Ex : 6ème, 5ème, 1ère, Terminale…" required>
+        {% if form.name.errors %}<p style="color:var(--danger);font-size:12px;margin-top:4px;">⚠️ {{ form.name.errors|join:', ' }}</p>{% endif %}
+      </div>
+      <div class="form-group">
+        <label class="form-label">Ordre d'affichage <span style="color:var(--danger)">*</span></label>
+        <input type="number" name="order" value="{{ form.order.value|default:'' }}"
+               class="form-input" placeholder="1 = premier affiché" min="0" required>
+        <p style="font-size:11px;color:var(--text3);margin-top:4px;">Les niveaux sont triés du plus petit au plus grand numéro.</p>
+        {% if form.order.errors %}<p style="color:var(--danger);font-size:12px;margin-top:4px;">⚠️ {{ form.order.errors|join:', ' }}</p>{% endif %}
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;margin-top:24px;padding-top:16px;border-top:1px solid var(--border);">
+      <button type="submit" class="btn btn-primary">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        Enregistrer
+      </button>
+      <a href="{% url 'level_list' %}" class="btn btn-secondary">Annuler</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+{% block title %}Classement{% endblock %}
+{% block page_title %}Classement{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">🏆 Classement</h1>
+    {% if selected_classroom and selected_trimester %}<p class="page-breadcrumb">{{ selected_classroom.name }} · {{ selected_trimester }}</p>{% endif %}
+  </div>
+  {% if selected_classroom and selected_trimester %}
+  <a href="{% url 'grade_matrix' %}?classroom={{ selected_classroom.pk }}&trimester={{ selected_trimester.pk }}" class="btn btn-secondary">← Tableau des notes</a>
+  {% endif %}
+</div>
+
+<div class="card" style="margin-bottom:16px;">
+  <form method="get" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+    <div style="flex:1;min-width:180px;">
+      <label class="form-label">Classe</label>
+      <select name="classroom" class="form-select">
+        <option value="">-- Choisir --</option>
+        {% for cls in classrooms %}<option value="{{ cls.pk }}" {% if selected_classroom and selected_classroom.pk == cls.pk %}selected{% endif %}>{{ cls.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div style="flex:1;min-width:180px;">
+      <label class="form-label">Trimestre</label>
+      <select name="trimester" class="form-select">
+        <option value="">-- Choisir --</option>
+        {% for t in trimesters %}<option value="{{ t.pk }}" {% if selected_trimester and selected_trimester.pk == t.pk %}selected{% endif %}>{{ t }}</option>{% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Afficher</button>
+  </form>
+</div>
+
+{% if rankings %}
+<!-- Podium top 3 -->
+{% with r_list=rankings|slice:":3" %}
+<div style="display:flex;justify-content:center;align-items:flex-end;gap:16px;margin-bottom:24px;">
+  {% for rc in r_list %}
+  {% if rc.rank == 2 %}
+  <div style="text-align:center;order:1;">
+    <div style="font-size:36px;margin-bottom:8px;">🥈</div>
+    <div class="avatar" style="width:56px;height:56px;font-size:20px;margin:0 auto 8px;background:linear-gradient(135deg,#94a3b8,#64748b);">{{ rc.student.first_name|first|upper }}{{ rc.student.last_name|first|upper }}</div>
+    <div style="font-weight:700;font-size:13px;">{{ rc.student.get_full_name }}</div>
+    <div style="font-size:20px;font-weight:800;color:#94a3b8;margin-top:4px;">{{ rc.general_average|floatformat:2 }}</div>
+    <div style="height:80px;background:linear-gradient(180deg,#475569,#334155);border-radius:8px 8px 0 0;margin-top:12px;display:flex;align-items:center;justify-content:center;">
+      <span style="font-size:24px;font-weight:800;color:white;">2</span>
+    </div>
+  </div>
+  {% endif %}
+  {% if rc.rank == 1 %}
+  <div style="text-align:center;order:2;">
+    <div style="font-size:44px;margin-bottom:8px;">🥇</div>
+    <div class="avatar" style="width:68px;height:68px;font-size:24px;margin:0 auto 8px;background:linear-gradient(135deg,#f59e0b,#d97706);box-shadow:0 0 24px rgba(245,158,11,0.4);">{{ rc.student.first_name|first|upper }}{{ rc.student.last_name|first|upper }}</div>
+    <div style="font-weight:700;font-size:14px;">{{ rc.student.get_full_name }}</div>
+    <div style="font-size:24px;font-weight:800;color:#f59e0b;margin-top:4px;">{{ rc.general_average|floatformat:2 }}</div>
+    <div style="height:110px;background:linear-gradient(180deg,#d97706,#b45309);border-radius:8px 8px 0 0;margin-top:12px;display:flex;align-items:center;justify-content:center;">
+      <span style="font-size:28px;font-weight:800;color:white;">1</span>
+    </div>
+  </div>
+  {% endif %}
+  {% if rc.rank == 3 %}
+  <div style="text-align:center;order:3;">
+    <div style="font-size:32px;margin-bottom:8px;">🥉</div>
+    <div class="avatar" style="width:50px;height:50px;font-size:18px;margin:0 auto 8px;background:linear-gradient(135deg,#cd7c3f,#a0522d);">{{ rc.student.first_name|first|upper }}{{ rc.student.last_name|first|upper }}</div>
+    <div style="font-weight:700;font-size:13px;">{{ rc.student.get_full_name }}</div>
+    <div style="font-size:18px;font-weight:800;color:#cd7c3f;margin-top:4px;">{{ rc.general_average|floatformat:2 }}</div>
+    <div style="height:60px;background:linear-gradient(180deg,#a0522d,#7c3f1e);border-radius:8px 8px 0 0;margin-top:12px;display:flex;align-items:center;justify-content:center;">
+      <span style="font-size:20px;font-weight:800;color:white;">3</span>
+    </div>
+  </div>
+  {% endif %}
+  {% endfor %}
+</div>
+{% endwith %}
+
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:60px;text-align:center;">Rang</th>
+          <th>Élève</th>
+          <th style="text-align:center;">Moyenne</th>
+          <th style="text-align:center;">Absences</th>
+          <th style="text-align:center;">Conduite</th>
+          <th style="text-align:center;">Appréciation</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for rc in rankings %}
+        <tr>
+          <td style="text-align:center;">
+            <span class="badge {% if rc.rank == 1 %}badge-yellow{% elif rc.rank <= 3 %}badge-blue{% else %}badge-gray{% endif %}" style="font-size:13px;">
+              {% if rc.rank == 1 %}🥇{% elif rc.rank == 2 %}🥈{% elif rc.rank == 3 %}🥉{% else %}{{ rc.rank }}{% endif %}
+            </span>
+          </td>
+          <td>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div class="avatar" style="width:34px;height:34px;font-size:13px;">{{ rc.student.first_name|first|upper }}{{ rc.student.last_name|first|upper }}</div>
+              <div>
+                <a href="{% url 'student_detail' rc.student.pk %}" style="font-weight:600;text-decoration:none;color:var(--text);">{{ rc.student.get_full_name }}</a>
+              </div>
+            </div>
+          </td>
+          <td style="text-align:center;">
+            <span style="font-size:18px;font-weight:800;color:{% if rc.general_average >= 14 %}var(--success){% elif rc.general_average >= 10 %}var(--warning){% else %}var(--danger){% endif %};">
+              {{ rc.general_average|floatformat:2 }}
+            </span>
+            <div style="font-size:11px;color:var(--text3);">/20</div>
+          </td>
+          <td style="text-align:center;">
+            <span class="badge {% if rc.absences_total == 0 %}badge-green{% elif rc.absences_total <= 3 %}badge-yellow{% else %}badge-red{% endif %}">
+              {{ rc.absences_total }}
+            </span>
+          </td>
+          <td style="text-align:center;"><span class="badge badge-blue">{{ rc.get_conduct_grade_display }}</span></td>
+          <td style="text-align:center;font-size:13px;color:var(--text3);">
+            {% if rc.general_average >= 16 %}Très bien{% elif rc.general_average >= 14 %}Bien{% elif rc.general_average >= 12 %}Assez bien{% elif rc.general_average >= 10 %}Passable{% else %}Insuffisant{% endif %}
+          </td>
+          <td>
+            <div style="display:flex;gap:4px;">
+              <a href="{% url 'report_card_detail' rc.pk %}" class="btn btn-secondary btn-xs">Bulletin</a>
+              <a href="{% url 'report_card_pdf' rc.pk %}" class="btn btn-primary btn-xs">PDF</a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if rankings %}
+  {% with rankings.0 as first %}
+  <div style="margin-top:16px;padding:12px;background:var(--card2);border-radius:10px;display:flex;gap:20px;flex-wrap:wrap;font-size:13px;">
+    <span>📊 <strong>Moy. classe :</strong> {{ first.class_average|floatformat:2 }}/20</span>
+    <span>📈 <strong>Meilleure moy. :</strong> {{ first.highest_average|floatformat:2 }}/20</span>
+    <span>📉 <strong>Moy. basse :</strong> {{ first.lowest_average|floatformat:2 }}/20</span>
+    <span>👥 <strong>Effectif :</strong> {{ first.class_size }} élèves</span>
+  </div>
+  {% endwith %}
+  {% endif %}
+</div>
+{% elif selected_classroom and selected_trimester %}
+<div class="card"><div class="empty-state"><div class="icon">🏆</div><h3>Aucun classement disponible</h3><p>Calculez d'abord les moyennes depuis le tableau des notes.</p></div></div>
+{% else %}
+<div class="card"><div class="empty-state"><div class="icon">🏆</div><h3>Sélectionnez une classe et un trimestre</h3></div></div>
+{% endif %}
+{% endblock %}

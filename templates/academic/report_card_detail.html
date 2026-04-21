@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% block title %}Bulletin - {{ rc.student.get_full_name }}{% endblock %}
+{% block page_title %}Bulletin de notes{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Bulletin de notes</h1>
+    <p class="page-breadcrumb">{{ rc.student.get_full_name }} · {{ rc.trimester }} · {{ rc.classroom.name }}</p>
+  </div>
+  <div style="display:flex;gap:8px;">
+    {% if user.role in 'admin,teacher' %}<a href="{% url 'report_card_edit' rc.pk %}" class="btn btn-secondary">✏️ Modifier</a>{% endif %}
+    <a href="{% url 'report_card_preview' rc.pk %}" class="btn btn-secondary" target="_blank">👁️ Aperçu</a>
+    <a href="{% url 'report_card_pdf' rc.pk %}" class="btn btn-primary">📥 Télécharger PDF</a>
+  </div>
+</div>
+
+<!-- Header card -->
+<div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,var(--bg2),rgba(79,156,249,0.04));">
+  <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+    <div class="avatar" style="width:64px;height:64px;font-size:22px;border-radius:16px;">{{ rc.student.first_name|first|upper }}{{ rc.student.last_name|first|upper }}</div>
+    <div style="flex:1;">
+      <div style="font-size:20px;font-weight:800;">{{ rc.student.get_full_name }}</div>
+      <div style="display:flex;gap:12px;margin-top:6px;flex-wrap:wrap;font-size:13px;color:var(--text3);">
+        <span>🏫 {{ rc.classroom.name }} — {{ rc.classroom.level.name }}</span>
+        <span>📅 {{ rc.trimester }}</span>
+        {% if rc.student.student_profile %}<span>🪪 {{ rc.student.student_profile.student_id }}</span>{% endif %}
+      </div>
+    </div>
+    <div style="text-align:center;padding:16px 24px;background:var(--card2);border-radius:14px;border:1px solid var(--border);">
+      <div style="font-size:36px;font-weight:800;color:{% if rc.general_average >= 14 %}var(--success){% elif rc.general_average >= 10 %}var(--warning){% else %}var(--danger){% endif %};">
+        {{ rc.general_average|floatformat:2|default:"—" }}
+      </div>
+      <div style="font-size:12px;color:var(--text3);">Moyenne générale /20</div>
+    </div>
+  </div>
+</div>
+
+<!-- Stats row -->
+<div class="stats-grid" style="margin-bottom:16px;">
+  <div class="stat-card blue">
+    <div class="stat-icon blue">🏆</div>
+    <div class="stat-value">{% if rc.rank %}{{ rc.rank }}{% if rc.rank == 1 %}er{% else %}ème{% endif %}{% else %}—{% endif %}</div>
+    <div class="stat-label">Rang / {{ rc.class_size|default:"—" }} élèves</div>
+  </div>
+  <div class="stat-card green">
+    <div class="stat-icon green">📊</div>
+    <div class="stat-value">{{ rc.class_average|floatformat:1|default:"—" }}</div>
+    <div class="stat-label">Moyenne de classe</div>
+  </div>
+  <div class="stat-card purple">
+    <div class="stat-icon purple">📈</div>
+    <div class="stat-value">{{ rc.highest_average|floatformat:1|default:"—" }}</div>
+    <div class="stat-label">Meilleure moyenne</div>
+  </div>
+  <div class="stat-card orange">
+    <div class="stat-icon orange">❌</div>
+    <div class="stat-value">{{ rc.absences_total }}</div>
+    <div class="stat-label">Absences ({{ rc.lates_total }} retard(s))</div>
+  </div>
+</div>
+
+<!-- Grades table -->
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-header"><div class="card-title">📚 Notes par matière</div></div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Matière</th>
+          <th style="text-align:center;">Coeff.</th>
+          <th style="text-align:center;">Moyenne /20</th>
+          <th style="text-align:center;">Moy × Coeff</th>
+          <th>Appréciation</th>
+          <th>Commentaire</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sg in sgs %}
+        <tr>
+          <td>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="width:10px;height:10px;border-radius:50%;background:{{ sg.subject.color }};flex-shrink:0;"></span>
+              <span style="font-weight:600;">{{ sg.subject.name }}</span>
+            </div>
+          </td>
+          <td style="text-align:center;color:var(--text3);">{{ sg.subject.coefficient }}</td>
+          <td style="text-align:center;">
+            {% if sg.average is not None %}
+            <span style="font-weight:800;font-size:16px;color:{% if sg.average >= 14 %}var(--success){% elif sg.average >= 10 %}var(--warning){% else %}var(--danger){% endif %};">
+              {{ sg.average|floatformat:2 }}
+            </span>
+            {% else %}<span style="color:var(--text3);">—</span>{% endif %}
+          </td>
+          <td style="text-align:center;color:var(--text2);">{{ sg.weighted_average|floatformat:2|default:"—" }}</td>
+          <td>
+            {% if sg.average is not None %}
+            <span class="badge {% if sg.average >= 16 %}badge-green{% elif sg.average >= 12 %}badge-blue{% elif sg.average >= 10 %}badge-yellow{% else %}badge-red{% endif %}">
+              {% if sg.average >= 16 %}Très bien{% elif sg.average >= 14 %}Bien{% elif sg.average >= 12 %}Assez bien{% elif sg.average >= 10 %}Passable{% else %}Insuffisant{% endif %}
+            </span>
+            {% endif %}
+          </td>
+          <td style="color:var(--text3);font-size:12px;font-style:italic;">{{ sg.teacher_comment|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6"><div class="empty-state"><p>Aucune note enregistrée pour ce trimestre</p></div></td></tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr style="background:var(--card2);">
+          <td colspan="2" style="font-weight:800;padding:12px 14px;">MOYENNE GÉNÉRALE</td>
+          <td style="text-align:center;font-size:20px;font-weight:800;color:{% if rc.general_average >= 14 %}var(--success){% elif rc.general_average >= 10 %}var(--warning){% else %}var(--danger){% endif %};">
+            {{ rc.general_average|floatformat:2|default:"—" }}
+          </td>
+          <td colspan="3"></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>
+
+<!-- Commentaires -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+  <div class="card">
+    <div style="font-size:11px;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;color:var(--text3);margin-bottom:8px;">Appréciation du professeur principal</div>
+    <p style="font-size:14px;color:var(--text2);line-height:1.6;">{{ rc.class_teacher_comment|default:"Aucune observation." }}</p>
+  </div>
+  <div class="card">
+    <div style="font-size:11px;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;color:var(--text3);margin-bottom:8px;">Décision du conseil de classe</div>
+    <p style="font-size:14px;color:var(--text2);line-height:1.6;">{{ rc.principal_comment|default:"Aucune décision." }}</p>
+    <div style="margin-top:12px;display:flex;gap:10px;align-items:center;">
+      <span style="font-size:12px;color:var(--text3);">Conduite :</span>
+      <span class="badge badge-blue">{{ rc.get_conduct_grade_display }}</span>
+      <span class="badge {% if rc.status == 'published' %}badge-green{% else %}badge-gray{% endif %}">{{ rc.get_status_display }}</span>
+    </div>
+  </div>
+</div>
+{% endblock %}
